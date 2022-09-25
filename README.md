@@ -1,8 +1,12 @@
 # game_sf
 
+Wrapper / helpers for making a game with SFML using [`crsfml`](https://github.com/oprypin/crsfml)
+
 ## Installation
 
-1. Add the dependency to your `shard.yml`:
+1. [Install SFML](https://github.com/oprypin/crsfml#install-sfml)
+
+2. Add the dependency to your `shard.yml`:
 
    ```yaml
    dependencies:
@@ -10,19 +14,28 @@
        github: mswieboda/game_sf
    ```
 
-2. Run `shards install`
+3. Run `shards install`
+
+### Windows
+
+if compiling/installing from Windows, please clone [`crsfml`](https://github.com/oprypin/crsfml)
+in the same directory you have this repo, so:
+
+```
+C:\some_dir\code
+C:\some_dir\code\crsfml
+C:\some_dir\code\shoot
+
+```
+
+because for Windows, when installing `crsfml` via `shards install`, `make` doesn't execute correctly, so I am requiring
+`crsfml` relatively for windows for now, instead of the normal shard usage. I may fork `crsfml` in the future so this isn't required, but for now it's a decent workaround.
 
 ## Usage
 
 ```crystal
 require "game_sf"
 ```
-
-TODO: Write usage instructions here
-
-## Development
-
-TODO: Write development instructions here
 
 ## Contributing
 

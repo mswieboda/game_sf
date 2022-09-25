@@ -7,3 +7,8 @@ authors:
 crystal: 1.5.1
 
 license: MIT
+
+dependencies:
+  crsfml:
+    github: oprypin/crsfml
+    version: ~> 2.5.2
