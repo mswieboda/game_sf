@@ -1,0 +1,9 @@
+name: game_sf
+version: 0.1.0
+
+authors:
+  - Matt Swieboda <mswieboda@users.noreply.github.com>
+
+crystal: 1.5.1
+
+license: MIT
