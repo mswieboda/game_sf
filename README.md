@@ -16,20 +16,7 @@ Wrapper / helpers for making a game with SFML using [`crsfml`](https://github.co
 
 3. Run `shards install`
 
-### Windows
-
-if compiling/installing from Windows, please clone [`crsfml`](https://github.com/oprypin/crsfml)
-in the same directory you have this repo, so:
-
-```
-C:\some_dir\code
-C:\some_dir\code\crsfml
-C:\some_dir\code\shoot
-
-```
-
-because for Windows, when installing `crsfml` via `shards install`, `make` doesn't execute correctly, so I am requiring
-`crsfml` relatively for windows for now, instead of the normal shard usage. I may fork `crsfml` in the future so this isn't required, but for now it's a decent workaround.
+Note: if installing on Windows use `shards install --skip-postinstall` as the `make` from `crsfml` fails with Windows, and the generation is only meant to be ran from a Unix machine.
 
 ## Usage
 
