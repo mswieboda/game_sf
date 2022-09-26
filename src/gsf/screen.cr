@@ -1,15 +1,23 @@
 module GSF
   class Screen
+    @@width = 1
+    @@height = 1
+
     def self.width
-      video_mode.width
+      @@width
     end
 
     def self.height
-      video_mode.height
+      @@height
     end
 
     def self.video_mode
       @@mode ||= SF::VideoMode.desktop_mode
+    end
+
+    def self.init(window : SF::RenderWindow)
+      @@width = window.size.x
+      @@height = window.size.y
     end
   end
 end

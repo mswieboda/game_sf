@@ -18,6 +18,8 @@ module GSF
       @window = SF::RenderWindow.new(mode, title, style)
       window.vertical_sync_enabled = vsync
 
+      Screen.init(window)
+
       @background_color = background_color
       @exit = false
       @clock = SF::Clock.new
