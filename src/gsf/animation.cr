@@ -77,5 +77,13 @@ module GSF
         raise "> #{self.class.name}#draw !sprite"
       end
     end
+
+    def global_bounds
+      if sprite = sprites[display_frame]
+        sprite.global_bounds
+      else
+        SF::FloatRect.new
+      end
+    end
   end
 end
