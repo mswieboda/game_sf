@@ -1,70 +1,60 @@
 module GSF
   class Keys
-    private module Util
-      # Copy all constants from the namespace into the current namespace
-      macro extract(from)
-        {% for c in from.resolve.constants %}
-          # :nodoc:
-          {{c}} = {{from}}::{{c}}{% if c.id.ends_with? "Count" %}.value{% end %}
-        {% end %}
-      end
-    end
-
     alias Key = SF::Keyboard::Key
 
-    Util.extract Key
+    Util.extract SF::Keyboard::Key
 
     def initialize
-      @keys = Hash(SF::Keyboard::Key, KeyState).new
+      @keys = Hash(Key, KeyState).new
     end
 
     def reset
-      @keys.each do |(keycode, keystate)|
-        keystate.seen unless keystate.seen?
+      @keys.each do |(key, state)|
+        state.seen unless state.seen?
       end
     end
 
-    def pressed(keycode : SF::Keyboard::Key)
-      if @keys.has_key?(keycode)
-        @keys[keycode].pressed
+    def pressed(key : Key)
+      if @keys.has_key?(key)
+        @keys[key].pressed
       else
-        @keys[keycode] = KeyState.new(pressed: true)
+        @keys[key] = KeyState.new(pressed: true)
       end
     end
 
-    def released(keycode : SF::Keyboard::Key)
-      if @keys.has_key?(keycode)
-        @keys[keycode].released
+    def released(key : Key)
+      if @keys.has_key?(key)
+        @keys[key].released
       else
-        @keys[keycode] = KeyState.new(pressed: false)
+        @keys[key] = KeyState.new(pressed: false)
       end
     end
 
-    def pressed?(keycode : SF::Keyboard::Key)
-      @keys.has_key?(keycode) && @keys[keycode].pressed?
+    def pressed?(key : Key)
+      @keys.has_key?(key) && @keys[key].pressed?
     end
 
-    def pressed?(keycodes : Array(SF::Keyboard::Key))
-      keycodes.any? { |keycode| pressed?(keycode) }
+    def pressed?(keys : Array(Key))
+      keys.any? { |key| pressed?(key) }
     end
 
     def any_pressed?
-      @keys.any? do |(keycode, keystate)|
-        keystate.pressed?
+      @keys.any? do |(key, state)|
+        state.pressed?
       end
     end
 
-    def just_pressed?(keycode : SF::Keyboard::Key)
-      @keys.has_key?(keycode) && @keys[keycode].just_pressed?
+    def just_pressed?(key : Key)
+      @keys.has_key?(key) && @keys[key].just_pressed?
     end
 
-    def just_pressed?(keycodes : Array(SF::Keyboard::Key))
-      keycodes.any? { |keycode| just_pressed?(keycode) }
+    def just_pressed?(keys : Array(Key))
+      keys.any? { |key| just_pressed?(key) }
     end
 
     def any_just_pressed?
-      @keys.any do |(keycode, keystate)|
-        keystate.just_pressed?
+      @keys.any do |(key, state)|
+        state.just_pressed?
       end
     end
   end
