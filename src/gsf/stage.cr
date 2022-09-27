@@ -2,12 +2,14 @@ module GSF
   abstract class Stage
     getter keys
     getter mouse
+    getter joysticks
     getter scene : Scene
     getter? exit
 
     def initialize
       @keys = Keys.new
       @mouse = Mouse.new
+      @joysticks = Joysticks.new
       @scene = SceneEmpty.new
       @exit = false
     end
@@ -36,14 +38,26 @@ module GSF
         mouse.pressed(event.button)
       when SF::Event::MouseButtonReleased
         mouse.released(event.button)
+      when SF::Event::JoystickButtonPressed # : joystick_id, button
+        puts ">>> JoystickButtonPressed #{event.joystick_id} #{event.button}"
+        joysticks.pressed(event.joystick_id, event.button)
+      when SF::Event::JoystickButtonReleased # : joystick_id, button
+        puts ">>> JoystickButtonReleased #{event.joystick_id} #{event.button}"
+        joysticks.released(event.joystick_id, event.button)
+      when SF::Event::JoystickMoved # : joystick_id, axis, position
+      when SF::Event::JoystickConnected # : joystick_id
+        puts ">>> JoystickConnected #{event.joystick_id}"
+      when SF::Event::JoystickDisconnected # : joystick_id
+        puts ">>> JoystickDisconnected #{event.joystick_id}"
       end
     end
 
     def update(frame_time)
       check_scenes
-      scene.update(frame_time, keys, mouse)
+      scene.update(frame_time, keys, mouse, joysticks)
       keys.reset
       mouse.reset
+      joysticks.reset
     end
 
     def draw(window : SF::RenderWindow)

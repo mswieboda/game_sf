@@ -15,7 +15,7 @@ module GSF
       @exit = false
     end
 
-    abstract def update(frame_time, keys : Keys, mouse : Mouse)
+    abstract def update(frame_time, keys : Keys, mouse : Mouse, joysticks : Joysticks)
 
     abstract def draw(window : SF::RenderWindow)
   end
