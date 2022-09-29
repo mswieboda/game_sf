@@ -23,7 +23,7 @@ module GSF
       @background_color = background_color
       @exit = false
       @clock = SF::Clock.new
-      @stage = StageEmpty.new
+      @stage = StageEmpty.new(window)
     end
 
     def run

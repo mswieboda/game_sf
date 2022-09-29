@@ -1,12 +1,14 @@
 module GSF
   abstract class Stage
+    getter window
     getter keys
     getter mouse
     getter joysticks
     getter scene : Scene
     getter? exit
 
-    def initialize
+    def initialize(window : SF::Window)
+      @window = window
       @keys = Keys.new
       @mouse = Mouse.new
       @joysticks = Joysticks.new
