@@ -68,11 +68,11 @@ module GSF
       @frame += 1 if frame < total_frames
     end
 
-    def draw(window, x, y, flip_horizontal = false, flip_vertical = false, color : SF::Color? = nil)
+    def draw(window, x, y, flip_horizontal = false, flip_vertical = false, color : SF::Color? = nil, rotation = 0)
       if sprite = sprites[display_frame]
         sprite.position = {x, y}
-
         sprite.color = color if color
+        sprite.rotation = rotation if rotation != 0
 
         if flip_horizontal || flip_vertical
           sh = flip_horizontal ? -1 : 1

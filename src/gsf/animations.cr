@@ -30,14 +30,15 @@ module GSF
       animation.update(frame_time)
     end
 
-    def draw(window, x, y, flip_horizontal = false, flip_vertical = false, color : SF::Color? = nil)
+    def draw(window, x, y, flip_horizontal = false, flip_vertical = false, color : SF::Color? = nil, rotation = 0)
       animation.draw(
         window,
         x,
         y,
         animation_data[:flip_horizontal],
         animation_data[:flip_vertical],
-        color
+        color,
+        rotation
       )
     end
 
