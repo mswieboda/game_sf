@@ -13,6 +13,25 @@ module GSF
       @buttons = Hash(Button, ButtonState).new
     end
 
+    def to_rotation(other_x, other_y)
+      dx = x - other_x
+      dy = y - other_y
+
+      if dx == 0
+        if dy > 0
+          return Math::PI / 2
+        elsif dy < 0
+          return -Math::PI / 2
+        else
+          return 0_f64
+        end
+      end
+
+      radians = Math.atan(dy / dx) + (dx < 0 ? Math::PI : 0_f64)
+
+      radians * 180 / Math::PI
+    end
+
     def moved(event : SF::Event::MouseMoved)
       @x = event.x
       @y = event.y
