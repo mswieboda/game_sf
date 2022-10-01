@@ -19,8 +19,11 @@ module GSF
       @paused = false
     end
 
-    def add(filename : String, x, y, width, height, color : SF::Color? = nil, rotation = 0, flip_horizontal = false, flip_vertical = false)
+    def add(filename : String, x, y, width, height, color : SF::Color? = nil, rotation = 0, flip_horizontal = false, flip_vertical = false, smooth = false, repeated = false)
       texture = SF::Texture.from_file(filename, SF::IntRect.new(x, y, width, height))
+      texture.smooth = smooth
+      texture.repeated = repeated
+
       sprite = SF::Sprite.new(texture)
       sprite.origin = texture.size / 2.0
       sprite.color = color ? color : SF::Color::White
