@@ -19,12 +19,19 @@ module GSF
       @paused = false
     end
 
-    def add(filename : String, x, y, width, height, color : SF::Color? = nil)
+    def add(filename : String, x, y, width, height, color : SF::Color? = nil, rotation = 0, flip_horizontal = false, flip_vertical = false)
       texture = SF::Texture.from_file(filename, SF::IntRect.new(x, y, width, height))
       sprite = SF::Sprite.new(texture)
       sprite.origin = texture.size / 2.0
-
       sprite.color = color ? color : SF::Color::White
+      sprite.rotation = rotation if rotation != 0
+
+      if flip_horizontal || flip_vertical
+        sh = flip_horizontal ? -1 : 1
+        sv = flip_vertical ? -1 : 1
+
+        sprite.scale = {sh, sv}
+      end
 
       sprites << sprite
 
