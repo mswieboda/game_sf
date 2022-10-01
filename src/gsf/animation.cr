@@ -24,7 +24,7 @@ module GSF
       sprite = SF::Sprite.new(texture)
       sprite.origin = texture.size / 2.0
 
-      sprite.color = color if color
+      sprite.color = color ? color : SF::Color::White
 
       sprites << sprite
 
