@@ -13,12 +13,13 @@ module GSF
       mode = Screen.video_mode,
       style = SF::Style::None,
       vsync = true,
-      background_color = DefaultBackgroundColor
+      background_color = DefaultBackgroundColor,
+      default_height = Screen::DefaultHeight
     )
       @window = SF::RenderWindow.new(mode, title, style)
       window.vertical_sync_enabled = vsync
 
-      Screen.init(window)
+      Screen.init(window, default_height)
 
       @background_color = background_color
       @exit = false
