@@ -25,7 +25,7 @@ module GSF
     def self.init(window : SF::RenderWindow, default_height = DefaultHeight)
       @@width = window.size.x
       @@height = window.size.y
-      @@scaling_factor = 1 / (@@height / default_height / 2_f64)
+      @@scaling_factor = @@height / default_height / 2_f64
     end
   end
 end
