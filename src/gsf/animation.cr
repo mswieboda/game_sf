@@ -36,7 +36,7 @@ module GSF
         sprite.scale = {sh, sv}
       end
 
-      sprite.scale(Screen.scaling_factor, Screen.scaling_factor)
+      # sprite.scale(Screen.scaling_factor, Screen.scaling_factor)
 
       sprites << sprite
 
