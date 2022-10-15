@@ -32,6 +32,10 @@ module GSF
       radians * 180 / Math::PI
     end
 
+    def view_coords(view : View)
+      view.window.map_pixel_to_coords({x, y}, view.view)
+    end
+
     def moved(event : SF::Event::MouseMoved)
       @x = event.x
       @y = event.y
