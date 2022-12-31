@@ -1,15 +1,22 @@
 module GSF
   class MenuItems
     getter items
+    getter? use_keyboard
+    getter? use_mouse
 
     def initialize(
       font : SF::Font,
       labels = [] of String,
       size = 72,
       text_color = SF::Color::White,
-      text_color_focused = SF::Color::Green
+      text_color_focused = SF::Color::Green,
+      initial_focused_index = -1,
+      use_keyboard = true,
+      use_mouse = false
     )
       @items = [] of MenuItem
+      @use_keyboard = use_keyboard
+      @use_mouse = use_mouse
 
       labels.each_with_index do |label, index|
         # NOTE: for now centered horizontally and vertically on the whole screen
@@ -23,7 +30,7 @@ module GSF
           size: size,
           text_color: text_color,
           text_color_focused: text_color_focused,
-          focused: index == 0,
+          focused: index == initial_focused_index,
           centered: true
         )
       end
@@ -38,6 +45,11 @@ module GSF
     def update(frame_time, keys : Keys, mouse : Mouse)
       items.each(&.update(frame_time))
 
+      keyboard_update(keys) if use_keyboard?
+      mouse_update(mouse) if use_mouse?
+    end
+
+    def keyboard_update(keys : Keys)
       if keys.just_pressed?(Keys::Up)
         if index = items.index(&.focused?)
           new_index = index - 1 >= 0 ? index - 1 : items.size - 1
@@ -52,6 +64,14 @@ module GSF
           items[index].blur
           items[new_index].focus
         end
+      end
+    end
+
+    def mouse_update(mouse : Mouse)
+      items.each do |item|
+        item.blur
+
+        item.focus if item.hover?(mouse)
       end
     end
 

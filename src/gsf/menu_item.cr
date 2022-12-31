@@ -55,5 +55,10 @@ module GSF
       @focused = false
       @text.fill_color = text_color
     end
+
+    def hover?(mouse : Mouse)
+      mouse.x > text.position.x && mouse.x <= text.position.x + text.global_bounds.width &&
+        mouse.y > text.position.y && mouse.y <= text.position.y + text.global_bounds.height
+    end
   end
 end
