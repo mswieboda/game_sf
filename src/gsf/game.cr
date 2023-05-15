@@ -3,7 +3,7 @@ module GSF
     getter window : SF::RenderWindow
     getter clock : SF::Clock
     getter? exit
-    getter background_color : SF::Color
+    property background_color : SF::Color
     getter stage : Stage
 
     DefaultBackgroundColor = SF::Color.new(0, 0, 0)
