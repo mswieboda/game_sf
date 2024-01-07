@@ -12,7 +12,9 @@ module GSF
       text_color_focused = SF::Color::Green,
       initial_focused_index = -1,
       use_keyboard = true,
-      use_mouse = false
+      use_mouse = false,
+      keys_next = [Key::Down, Key::S, Key::RShift, Key::Tab],
+      keys_previous = [Key::Up, Key::W, Key::LShift]
     )
       @items = [] of MenuItem
       @use_keyboard = use_keyboard
@@ -36,9 +38,19 @@ module GSF
       end
     end
 
+    def self.selected?(keys, mouse)
+      return false unless focused
+
+      if use_keyboard?
+        keys.just_pressed?([Keys::Space, Keys::Enter])
+      elsif use_mouse?
+        mouse.just_pressed?(Mouse::Left)
+      end
+    end
+
     def focused
       if item = items.find(&.focused?)
-        return item.label
+        item.label
       end
     end
 
