@@ -3,6 +3,10 @@ module GSF
     getter items
     getter? use_keyboard
     getter? use_mouse
+    getter keys_next
+    getter keys_previous
+    getter keys_select
+    getter mouse_select
 
     def initialize(
       font : SF::Font,
@@ -13,12 +17,18 @@ module GSF
       initial_focused_index = -1,
       use_keyboard = true,
       use_mouse = false,
-      keys_next = [Key::Down, Key::S, Key::RShift, Key::Tab],
-      keys_previous = [Key::Up, Key::W, Key::LShift]
+      keys_next = [Keys::Down, Keys::S, Keys::RShift, Keys::Tab],
+      keys_previous = [Keys::Up, Keys::W, Keys::LShift],
+      keys_select = [Keys::Space, Keys::Enter],
+      mouse_select = Mouse::Left
     )
       @items = [] of MenuItem
       @use_keyboard = use_keyboard
       @use_mouse = use_mouse
+      @keys_next = keys_next
+      @keys_previous = keys_previous
+      @keys_select = keys_select
+      @mouse_select = mouse_select
 
       labels.each_with_index do |label, index|
         # NOTE: for now centered horizontally and vertically on the whole screen
@@ -38,13 +48,13 @@ module GSF
       end
     end
 
-    def self.selected?(keys, mouse)
+    def selected?(keys, mouse, _joysticks)
       return false unless focused
 
       if use_keyboard?
-        keys.just_pressed?([Keys::Space, Keys::Enter])
+        keys.just_pressed?(keys_select)
       elsif use_mouse?
-        mouse.just_pressed?(Mouse::Left)
+        mouse.just_pressed?(mouse_select)
       end
     end
 
@@ -62,14 +72,14 @@ module GSF
     end
 
     def keyboard_update(keys : Keys)
-      if keys.just_pressed?(Keys::Up)
+      if keys.just_pressed?(keys_previous)
         if index = items.index(&.focused?)
           new_index = index - 1 >= 0 ? index - 1 : items.size - 1
 
           items[index].blur
           items[new_index].focus
         end
-      elsif keys.just_pressed?(Keys::Down)
+      elsif keys.just_pressed?(keys_next)
         if index = items.index(&.focused?)
           new_index = index + 1 < items.size ? index + 1 : 0
 
