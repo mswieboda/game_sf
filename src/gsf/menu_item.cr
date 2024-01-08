@@ -1,6 +1,7 @@
 module GSF
   class MenuItem
     getter? focused
+    getter key : String
     getter label : String
     getter size
     getter text : SF::Text
@@ -10,20 +11,16 @@ module GSF
     def initialize(
       x,
       y,
-      label,
+      @label,
+      @key,
       font : SF::Font,
-      size = 72,
-      text_color = SF::Color::White,
-      text_color_focused = SF::Color::Green,
-      focused = false,
+      @size = 72,
+      @text_color = SF::Color::White,
+      @text_color_focused = SF::Color::Green,
+      @focused = false,
       centered = true
     )
-      @focused = focused
-      @size = size
-      @label = label
       @text = SF::Text.new(label, font, size)
-      @text_color = text_color
-      @text_color_focused = text_color_focused
 
       if centered
         x -= @text.global_bounds.width / 2
