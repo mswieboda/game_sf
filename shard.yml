@@ -1,14 +1,14 @@
 name: game_sf
-version: 0.17.0
+version: 0.18.0
 
 authors:
   - Matt Swieboda <mswieboda@users.noreply.github.com>
 
-crystal: '>= 1.10.1'
+crystal: '>= 1.12.1'
 
 license: MIT
 
 dependencies:
   crsfml:
     github: oprypin/crsfml
-    version: ~> 2.5.2
+    version: ~> 2.5.3
