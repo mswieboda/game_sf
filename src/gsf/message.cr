@@ -345,7 +345,10 @@ module GSF
 
       if show? && (!animate? || @animate_timer.done?)
         draw_text(window)
-        draw_choices(window) if page_index >= pages.size - 1
+
+        if (!typing? || @typing_timer.done?) && page_index >= pages.size - 1
+          draw_choices(window)
+        end
       end
     end
 
