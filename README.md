@@ -32,6 +32,33 @@ require "game_sf"
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
+### New Release
+
+To make a new release after PRs or features merged, make sure you bump the
+version and push the tag. Currently this is done on `master` but might be automated with GitHub Actions/CI or done manually in PRs down the line.
+
+script helper to bump version, commit, and tag:
+```
+crystal src/bump.cr patch|minor|major|specific-version
+```
+next
+```
+git push
+```
+and
+```
+git push --tags
+```
+
+Automating this step into a script in the future would be nice too, such as:
+
+```
+crystal src/bump.cr patch
+crystal src/release.cr
+```
+
+but that hasn't been done yet.
+
 ## Contributors
 
 - [Matt Swieboda](https://github.com/mswieboda) - creator and maintainer
