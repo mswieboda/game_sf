@@ -77,6 +77,7 @@ module GSF
 
       @sound = SF::Sound.new
       @choice_index = 0
+      @choice_selected = nil
     end
 
     # NOTE: this has to be overridden by a custom font
@@ -409,7 +410,7 @@ module GSF
   class BottomCenteredMessage < Message
     BottomPadding = Message::Padding * 3
 
-    def initialize(message = "", typing = true, animate = true, @choices = [] of String)
+    def initialize(message = "", typing = true, animate = true, choices = [] of String)
       test_text = SF::Text.new(" ", font, font_size)
       test_text.line_spacing = line_spacing
 
