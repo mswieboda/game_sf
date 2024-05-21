@@ -20,6 +20,7 @@ module GSF
     getter sound : SF::Sound
     getter choices : Array(String)
     getter choice_index
+    getter choice_selected : String?
 
     Padding = 64
     FontSize = 28
@@ -149,7 +150,7 @@ module GSF
 
     # NOTE: this has to be overridden by a custom SF::SoundBuffer
     #       like `@@next_page_sound_buffer ||= SF::SoundBuffer.from_file("./assets/next_page.wav")`
-    def next_page_sound_buffer : SF::SoundBuffer | Nil
+    def next_page_sound_buffer : SF::SoundBuffer?
       nil
     end
 
@@ -161,7 +162,7 @@ module GSF
 
     # NOTE: this has to be overridden by a custom SF::SoundBuffer
     #       like `@@skip_typing_sound_buffer ||= SF::SoundBuffer.from_file("./assets/skip_page.wav")`
-    def skip_typing_sound_buffer : SF::SoundBuffer | Nil
+    def skip_typing_sound_buffer : SF::SoundBuffer?
       nil
     end
 
@@ -173,7 +174,7 @@ module GSF
 
     # NOTE: this has to be overridden by a custom SF::SoundBuffer
     #       like `@@next_choice_sound_buffer ||= SF::SoundBuffer.from_file("./assets/next_choice.wav")`
-    def next_choice_sound_buffer : SF::SoundBuffer | Nil
+    def next_choice_sound_buffer : SF::SoundBuffer?
       nil
     end
 
@@ -185,7 +186,7 @@ module GSF
 
     # NOTE: this has to be overridden by a custom SF::SoundBuffer
     #       like `@@prev_choice_sound_buffer ||= SF::SoundBuffer.from_file("./assets/prev_choice.wav")`
-    def prev_choice_sound_buffer : SF::SoundBuffer | Nil
+    def prev_choice_sound_buffer : SF::SoundBuffer?
       nil
     end
 
@@ -211,7 +212,12 @@ module GSF
       if !typing? || @typing_timer.done?
         if keys.just_pressed?(next_page_keys)
           play_sound(next_page_sound_buffer, next_page_sound_pitch)
-          next_page_or_hide
+
+          if page_index >= pages.size - 1 && choices.any?
+            @choice_selected = choices[@choice_index]
+          else
+            next_page_or_hide
+          end
         end
       elsif typing? && !@typing_timer.done? && keys.just_pressed?(skip_typing_keys)
         play_sound(skip_typing_sound_buffer, skip_typing_sound_pitch)
@@ -269,6 +275,7 @@ module GSF
 
       if animate?
         @show = false
+        @choice_selected = nil
         @animate_timer.start
       else
         hide_reset
@@ -279,6 +286,7 @@ module GSF
       @hide = true
       @animate_timer = Timer.new(animate_duration)
       @page_index = 0
+      @choice_selected = nil
       reset_message
     end
 
