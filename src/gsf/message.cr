@@ -16,6 +16,7 @@ module GSF
     getter? hide
     getter pages : Array(Array(String))
     getter page_index
+    getter sound : SF::Sound
 
     Padding = 64
     FontSize = 28
@@ -58,6 +59,8 @@ module GSF
       end
 
       @text.position = {x + padding, y + padding}
+
+      @sound = SF::Sound.new
     end
 
     # NOTE: this has to be overridden by a custom font
@@ -105,8 +108,36 @@ module GSF
       AnimateDuration
     end
 
-    def accept_keys
+    def next_keys
       [Keys::Enter, Keys::Space, Keys::E]
+    end
+
+    def skip_keys
+      [Keys::Enter, Keys::Space, Keys::E]
+    end
+
+    # NOTE: this has to be overridden by a custom SF::SoundBuffer
+    #       like `@@next_sound_buffer ||= SF::SoundBuffer.from_file("./assets/next.wav")`
+    def next_sound_buffer : SF::SoundBuffer | Nil
+      nil
+    end
+
+    def next_sound_pitch
+      # NOTE: override to vary or change the pitch
+      # ex: `rand(0.9..1.1)`
+      1
+    end
+
+    # NOTE: this has to be overridden by a custom SF::SoundBuffer
+    #       like `@@skip_sound_buffer ||= SF::SoundBuffer.from_file("./assets/next.wav")`
+    def skip_sound_buffer : SF::SoundBuffer | Nil
+      nil
+    end
+
+    def skip_sound_pitch
+      # NOTE: override to vary or change the pitch
+      # ex: `rand(0.9..1.1)`
+      1
     end
 
     def update(keys : Keys)
@@ -121,12 +152,24 @@ module GSF
         end
       end
 
-      if keys.just_pressed?(accept_keys)
-        if @typing_timer.done?
-          next_or_hide
-        else
-          @typing_timer.duration = type_duration
-        end
+      if keys.just_pressed?(next_keys) && @typing_timer.done?
+        play_sound(next_sound_buffer, next_sound_pitch)
+        next_or_hide
+      elsif keys.just_pressed?(skip_keys) && !@typing_timer.done?
+        play_sound(skip_sound_buffer, skip_sound_pitch)
+
+        # forces skipping the animation
+        @typing_timer.duration = type_duration
+      end
+    end
+
+    def play_sound(sound_buffer, pitch)
+      if buffer = sound_buffer
+        sound.buffer = buffer
+        return if sound.status.playing?
+
+        sound.pitch = pitch
+        sound.play
       end
     end
 
@@ -141,12 +184,16 @@ module GSF
       end
     end
 
+    def reset_message
+      @message = pages[page_index].join("\n")
+      @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
+      @text.string = typing? ? "" : @message
+    end
+
     def next_or_hide
       if page_index < pages.size - 1
         @page_index += 1
-        @message = pages[page_index].join("\n")
-        @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
-        @text.string = typing? ? "" : @message
+        reset_message
         return
       end
 
@@ -160,9 +207,9 @@ module GSF
 
     def hide_reset
       @hide = true
-      text.string = typing? ? "" : @message
-      @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
       @animate_timer = Timer.new(animate_duration)
+      @page_index = 0
+      reset_message
     end
 
     def x
