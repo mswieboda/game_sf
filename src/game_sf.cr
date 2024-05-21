@@ -5,5 +5,5 @@ require "./gsf/macros"
 require "./gsf/*"
 
 module GSF
-  VERSION = "0.19.0"
+  VERSION = "0.20.0"
 end

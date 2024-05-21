@@ -14,9 +14,12 @@ module GSF
     getter? animate
     getter? show
     getter? hide
+    getter pages : Array(Array(String))
+    getter page_index
 
     Padding = 64
     FontSize = 28
+    MaxLines = 4
     LineSpacing = 2.25
     TypeDuration = 69.milliseconds
     AnimateDuration = 300.milliseconds
@@ -25,7 +28,7 @@ module GSF
     OutlineColor = SF::Color.new(102, 102, 102)
     OutlineThickness = 8
 
-    def initialize(@cx, @y, @max_width, @message = "", @typing = false, @animate = false)
+    def initialize(@cx, @y = -1, bot_y = -1, @max_width = Screen.width, @message = "", @typing = false, @animate = false)
       @text = SF::Text.new(message, font, font_size)
       @text.line_spacing = line_spacing
       @text.fill_color = text_color
@@ -33,8 +36,12 @@ module GSF
       text_width = @text.global_bounds.width
 
       @width = [text_width, @max_width].min
-      lines = @width < text_width ? calc_lines : [@message]
-      @message = lines.join("\n")
+      lines = @width < text_width ? get_lines : [@message]
+
+      @pages = lines.in_slices_of(max_lines)
+      @page_index = 0
+
+      @message = pages.first.join("\n")
       @text.string = @message
       @height = @text.global_bounds.height
 
@@ -46,7 +53,11 @@ module GSF
       @show = false
       @hide = true
 
-      @text.position = {x, y}
+      if bot_y >= 0
+        @y = (Screen.height - padding * 2 - height - bot_y).to_f32
+      end
+
+      @text.position = {x + padding, y + padding}
     end
 
     # NOTE: this has to be overridden by a custom font
@@ -56,6 +67,10 @@ module GSF
 
     def font_size
       FontSize
+    end
+
+    def max_lines
+      MaxLines
     end
 
     def line_spacing
@@ -108,7 +123,7 @@ module GSF
 
       if keys.just_pressed?(accept_keys)
         if @typing_timer.done?
-          hide
+          next_or_hide
         else
           @typing_timer.duration = type_duration
         end
@@ -126,7 +141,15 @@ module GSF
       end
     end
 
-    def hide
+    def next_or_hide
+      if page_index < pages.size - 1
+        @page_index += 1
+        @message = pages[page_index].join("\n")
+        @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
+        @text.string = typing? ? "" : @message
+        return
+      end
+
       if animate?
         @show = false
         @animate_timer.start
@@ -170,7 +193,7 @@ module GSF
       end
     end
 
-    def calc_lines
+    def get_lines
       lines = [""]
       line_index = 0
       text.string = " "
@@ -202,7 +225,8 @@ module GSF
         text.string = @message[0..index]
       end
 
-      @text.position = {x, y} if animate?
+      # TODO: try commenting this out
+      @text.position = {x + padding, y + padding} if animate?
 
       window.draw(text)
     end
@@ -213,22 +237,33 @@ module GSF
       rect.fill_color = background_color
       rect.outline_color = outline_color
       rect.outline_thickness = outline_thickness
-      rect.position = {x - padding, y - padding}
+      rect.position = {x, y}
 
       window.draw(rect)
     end
   end
 
-  class CenteredMessage < Message
+  class BottomCenteredMessage < Message
+    BottomPadding = Message::Padding * 3
+
     def initialize(message = "", typing = true, animate = true)
+      test_text = SF::Text.new(" ", font, font_size)
+      test_text.line_spacing = line_spacing
+
+      height = test_text.global_bounds.height * max_lines
+
       super(
         cx: (Screen.width / 2).to_i,
-        y: (Screen.height * 0.75).to_i,
+        bot_y: bottom_padding,
         max_width: (Screen.width / 2).to_i,
         message: message,
         typing: typing,
         animate: animate
       )
+    end
+
+    def bottom_padding
+      BottomPadding
     end
   end
 end
