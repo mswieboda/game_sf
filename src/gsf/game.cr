@@ -4,11 +4,10 @@ module GSF
     getter clock : SF::Clock
     getter? exit
     getter stage : Stage
-    getter target_height : UInt32?
 
     DefaultBackgroundColor = SF::Color.new(0, 0, 0)
 
-    def initialize(title = "", mode = SF::VideoMode.desktop_mode, style = SF::Style::None, @target_height = nil)
+    def initialize(title = "", mode = SF::VideoMode.desktop_mode, style = SF::Style::Default)
       if style.fullscreen?
         mode = SF::VideoMode.fullscreen_modes.first
       end
@@ -19,7 +18,7 @@ module GSF
       @window.joystick_threshold = joystick_threshold
       @window.mouse_cursor_visible = mouse_cursor_visible
 
-      Screen.init(@window, mode.width, mode.height, target_height)
+      Screen.init(@window)
 
       @exit = false
       @clock = SF::Clock.new
@@ -66,7 +65,7 @@ module GSF
       case event
       when SF::Event::Resized
         # update the view to the new size of the window
-        Screen.init(window, event.width, event.height, target_height)
+        Screen.init(window)
       when SF::Event::Closed
         window.close
       end

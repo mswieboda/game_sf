@@ -1,6 +1,6 @@
 module GSF
   class Screen
-    @@window : SF::RenderWindow = SF::RenderWindow.new(SF::VideoMode.desktop_mode, "")
+    @@window : SF::RenderWindow = SF::RenderWindow.new()
 
     def self.window
       @@window
@@ -10,19 +10,16 @@ module GSF
       @@window.view
     end
 
-    def self.view_top_left
-      x = view.center.x - view.size.x / 2
-      y = view.center.y - view.size.y / 2
-
-      {x, y}
+    def self.view=(view : SF::View)
+      @@window.view = view
     end
 
     def self.x
-      view_top_left[0]
+      view.center.x - width / 2
     end
 
     def self.y
-      view_top_left[1]
+      view.center.y - height / 2
     end
 
     def self.width
@@ -34,21 +31,18 @@ module GSF
     end
 
     def self.reset_view
-      window.view = SF::View.new(SF.float_rect(0, 0, width, height))
+      window.view.reset(SF.float_rect(0, 0, width, height))
     end
 
-    def self.init(window : SF::RenderWindow, width, height, target_height : UInt32? = nil)
+    def self.center_view
+      view = SF::View.new
+      view.size = window.view.size
+      view.center = {view.size.x / 2, view.size.y / 2}
+      window.view = view
+    end
+
+    def self.init(window : SF::RenderWindow)
       @@window = window
-
-      if t_height = target_height
-        if height > t_height
-          ratio = (height / t_height).ceil.to_i
-          width = (width / ratio).to_i
-          height = (height / ratio).to_i
-        end
-      end
-
-      window.view = SF::View.new(SF.float_rect(0, 0, width, height))
     end
   end
 end
