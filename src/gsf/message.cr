@@ -2,6 +2,7 @@ module GSF
   class Message
     @width : Float32 | Int32
     @height : Float32 | Int32
+    @char_height : Float32 | Int32
     @typing_timer : Timer
     @animate_timer : Timer
 
@@ -17,6 +18,8 @@ module GSF
     getter pages : Array(Array(String))
     getter page_index
     getter sound : SF::Sound
+    getter choices : Array(String)
+    getter choice_index
 
     Padding = 64
     FontSize = 28
@@ -27,9 +30,19 @@ module GSF
     BackgroundColor = SF::Color.new(17, 17, 17, 170)
     TextColor = SF::Color::White
     OutlineColor = SF::Color.new(102, 102, 102)
-    OutlineThickness = 8
+    OutlineThickness = 4
+    SelectedChoiceTextColor = SF::Color.new(0, 255, 0)
 
-    def initialize(@cx, @y = -1, bot_y = -1, @max_width = Screen.width, @message = "", @typing = false, @animate = false)
+    def initialize(
+      @cx,
+      @y = -1,
+      bot_y = -1,
+      @max_width = Screen.width,
+      @message = "",
+      @typing = false,
+      @animate = false,
+      @choices = [] of String
+    )
       @text = SF::Text.new(message, font, font_size)
       @text.line_spacing = line_spacing
       @text.fill_color = text_color
@@ -41,6 +54,9 @@ module GSF
 
       @pages = lines.in_slices_of(max_lines)
       @page_index = 0
+
+      @text.string = "M"
+      @char_height = @text.global_bounds.height
 
       @message = pages.first.join("\n")
       @text.string = @message
@@ -58,9 +74,8 @@ module GSF
         @y = (Screen.height - padding * 2 - height - bot_y).to_f32
       end
 
-      @text.position = {x + padding, y + padding}
-
       @sound = SF::Sound.new
+      @choice_index = 0
     end
 
     # NOTE: this has to be overridden by a custom font
@@ -100,6 +115,14 @@ module GSF
       Padding
     end
 
+    def choice_padding
+      padding / 4
+    end
+
+    def selected_choice_text_color
+      SelectedChoiceTextColor
+    end
+
     def type_duration
       TypeDuration
     end
@@ -108,33 +131,65 @@ module GSF
       AnimateDuration
     end
 
-    def next_keys
-      [Keys::Enter, Keys::Space, Keys::E]
+    def next_page_keys
+      [Keys::Enter, Keys::E, Keys::Space]
     end
 
-    def skip_keys
-      [Keys::Enter, Keys::Space, Keys::E]
+    def skip_typing_keys
+      [Keys::Escape, Keys::Q, Keys::Backspace, Keys::Delete]
+    end
+
+    def next_choice_keys
+      [Keys::Tab, Keys::S, Keys::Down]
+    end
+
+    def prev_choice_keys
+      [Keys::W, Keys::Up]
     end
 
     # NOTE: this has to be overridden by a custom SF::SoundBuffer
-    #       like `@@next_sound_buffer ||= SF::SoundBuffer.from_file("./assets/next.wav")`
-    def next_sound_buffer : SF::SoundBuffer | Nil
+    #       like `@@next_page_sound_buffer ||= SF::SoundBuffer.from_file("./assets/next_page.wav")`
+    def next_page_sound_buffer : SF::SoundBuffer | Nil
       nil
     end
 
-    def next_sound_pitch
+    def next_page_sound_pitch
       # NOTE: override to vary or change the pitch
       # ex: `rand(0.9..1.1)`
       1
     end
 
     # NOTE: this has to be overridden by a custom SF::SoundBuffer
-    #       like `@@skip_sound_buffer ||= SF::SoundBuffer.from_file("./assets/next.wav")`
-    def skip_sound_buffer : SF::SoundBuffer | Nil
+    #       like `@@skip_typing_sound_buffer ||= SF::SoundBuffer.from_file("./assets/skip_page.wav")`
+    def skip_typing_sound_buffer : SF::SoundBuffer | Nil
       nil
     end
 
-    def skip_sound_pitch
+    def skip_typing_sound_pitch
+      # NOTE: override to vary or change the pitch
+      # ex: `rand(0.9..1.1)`
+      1
+    end
+
+    # NOTE: this has to be overridden by a custom SF::SoundBuffer
+    #       like `@@next_choice_sound_buffer ||= SF::SoundBuffer.from_file("./assets/next_choice.wav")`
+    def next_choice_sound_buffer : SF::SoundBuffer | Nil
+      nil
+    end
+
+    def next_choice_sound_pitch
+      # NOTE: override to vary or change the pitch
+      # ex: `rand(0.9..1.1)`
+      1
+    end
+
+    # NOTE: this has to be overridden by a custom SF::SoundBuffer
+    #       like `@@prev_choice_sound_buffer ||= SF::SoundBuffer.from_file("./assets/prev_choice.wav")`
+    def prev_choice_sound_buffer : SF::SoundBuffer | Nil
+      nil
+    end
+
+    def prev_choice_sound_pitch
       # NOTE: override to vary or change the pitch
       # ex: `rand(0.9..1.1)`
       1
@@ -142,24 +197,39 @@ module GSF
 
     def update(keys : Keys)
       return if hide?
+      return if animate? && !@animate_timer.done?
 
-      if animate? && @animate_timer.done?
-        if show?
-          @typing_timer.start if !@typing_timer.started?
-        else
-          hide_reset
-          return
+      if show?
+        if !@typing_timer.started?
+          @typing_timer.start
         end
+      else
+        hide_reset
+        return
       end
 
-      if keys.just_pressed?(next_keys) && @typing_timer.done?
-        play_sound(next_sound_buffer, next_sound_pitch)
-        next_or_hide
-      elsif keys.just_pressed?(skip_keys) && !@typing_timer.done?
-        play_sound(skip_sound_buffer, skip_sound_pitch)
+      if !typing? || @typing_timer.done?
+        if keys.just_pressed?(next_page_keys)
+          play_sound(next_page_sound_buffer, next_page_sound_pitch)
+          next_page_or_hide
+        end
+      elsif typing? && !@typing_timer.done? && keys.just_pressed?(skip_typing_keys)
+        play_sound(skip_typing_sound_buffer, skip_typing_sound_pitch)
 
         # forces skipping the animation
         @typing_timer.duration = type_duration
+      end
+
+      if page_index >= pages.size - 1 && choices.any? && (!typing? || @typing_timer.done?)
+        if keys.just_pressed?(next_choice_keys)
+          play_sound(next_choice_sound_buffer, next_choice_sound_pitch)
+          @choice_index += 1
+          @choice_index = 0 if @choice_index >= choices.size
+        elsif keys.just_pressed?(prev_choice_keys)
+          play_sound(prev_choice_sound_buffer, prev_choice_sound_pitch)
+          @choice_index -= 1
+          @choice_index = choices.size - 1 if @choice_index < 0
+        end
       end
     end
 
@@ -190,7 +260,7 @@ module GSF
       @text.string = typing? ? "" : @message
     end
 
-    def next_or_hide
+    def next_page_or_hide
       if page_index < pages.size - 1
         @page_index += 1
         reset_message
@@ -263,7 +333,11 @@ module GSF
       return if hide?
 
       draw_border(window)
-      draw_text(window) if show?
+
+      if show? && (!animate? || @animate_timer.done?)
+        draw_text(window)
+        draw_choices(window) if page_index >= pages.size - 1
+      end
     end
 
     def draw_text(window)
@@ -272,8 +346,7 @@ module GSF
         text.string = @message[0..index]
       end
 
-      # TODO: try commenting this out
-      @text.position = {x + padding, y + padding} if animate?
+      @text.position = {x + padding, y + padding}
 
       window.draw(text)
     end
@@ -288,12 +361,47 @@ module GSF
 
       window.draw(rect)
     end
+
+    def draw_choices(window)
+      return if choices.empty?
+
+      text_color = @text.fill_color
+
+      choices.each_with_index do |choice, index|
+        text.string = choice
+        px = x + width + padding * 2 + outline_thickness * 2 + choice_padding
+        py = y + (@char_height + choice_padding * 3 + outline_thickness * 2) * index
+        text_width = text.global_bounds.width
+
+        draw_choice_border(window, px, py, text_width)
+
+        @text.fill_color = selected_choice_text_color if index == @choice_index
+
+        text.position = {px + choice_padding, py + choice_padding}
+
+        window.draw(text)
+
+        # set text color back to normal if it was selected
+        @text.fill_color = text_color if index == @choice_index
+      end
+    end
+
+    def draw_choice_border(window, px, py, text_width)
+      rect = SF::RectangleShape.new
+      rect.size = SF.vector2f(text_width + choice_padding * 2, @char_height + choice_padding * 2)
+      rect.fill_color = background_color
+      rect.outline_color = outline_color
+      rect.outline_thickness = outline_thickness
+      rect.position = {px, py}
+
+      window.draw(rect)
+    end
   end
 
   class BottomCenteredMessage < Message
     BottomPadding = Message::Padding * 3
 
-    def initialize(message = "", typing = true, animate = true)
+    def initialize(message = "", typing = true, animate = true, @choices = [] of String)
       test_text = SF::Text.new(" ", font, font_size)
       test_text.line_spacing = line_spacing
 
@@ -305,7 +413,8 @@ module GSF
         max_width: (Screen.width / 2).to_i,
         message: message,
         typing: typing,
-        animate: animate
+        animate: animate,
+        choices: choices
       )
     end
 
