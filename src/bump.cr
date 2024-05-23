@@ -60,7 +60,7 @@ module GSF
 
     def git_tag
       puts "git tag v#{@version}"
-      Process.run("git", ["commit", "tag", "v#{@version}"], output: STDOUT)
+      Process.run("git", ["tag", "v#{@version}"], output: STDOUT)
     end
 
     def run

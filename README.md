@@ -39,9 +39,9 @@ version and push the tag. Currently this is done on `master` but might be automa
 
 script helper to bump version, commit, and tag:
 ```
-crystal src/bump.cr patch|minor|major|specific-version
+./bump.cr patch|minor|major|specific-version
 ```
-next
+then
 ```
 git push
 ```
@@ -50,14 +50,6 @@ and
 git push --tags
 ```
 
-Automating this step into a script in the future would be nice too, such as:
-
-```
-crystal src/bump.cr patch
-crystal src/release.cr
-```
-
-but that hasn't been done yet.
 
 ## Contributors
 
