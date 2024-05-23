@@ -1,6 +1,7 @@
 module GSF
   class Message
-    @width : Float32 | Int32
+    alias ChoiceData = NamedTuple(key: String, label: String)
+
     @height : Float32 | Int32
     @char_height : Float32 | Int32
     @typing_timer : Timer
@@ -10,7 +11,7 @@ module GSF
     getter y : Float32 | Int32
     getter message : String
     getter text : SF::Text
-    getter max_width : Float32 | Int32
+    getter width : Float32 | Int32
     getter? typing
     getter? animate
     getter? show
@@ -18,9 +19,9 @@ module GSF
     getter pages : Array(Array(String))
     getter page_index
     getter sound : SF::Sound
-    getter choices : Array(String)
+    getter choices : Array(ChoiceData)
     getter choice_index
-    getter choice_selected : String?
+    getter choice_selected : ChoiceData?
 
     Padding = 64
     FontSize = 28
@@ -38,30 +39,21 @@ module GSF
       @cx,
       @y = -1,
       bot_y = -1,
-      @max_width = Screen.width,
+      @width = Screen.width,
       @message = "",
       @typing = false,
       @animate = false,
-      @choices = [] of String
+      @choices = [] of ChoiceData
     )
-      @text = SF::Text.new(message, font, font_size)
+      @text = SF::Text.new("", font, font_size)
+      @pages = [] of Array(String)
+      @page_index = 0
       @text.line_spacing = line_spacing
       @text.fill_color = text_color
 
-      text_width = @text.global_bounds.width
-
-      @width = [text_width, @max_width].min
-      lines = @width < text_width ? get_lines : [@message]
-
-      @pages = lines.in_slices_of(max_lines)
-      @page_index = 0
-
       @text.string = "M"
       @char_height = @text.global_bounds.height
-
-      @message = pages.first.join("\n")
-      @text.string = @message
-      @height = @text.global_bounds.height
+      @height = @char_height * max_lines
 
       @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
       @text.string = typing? ? "" : @message
@@ -78,6 +70,10 @@ module GSF
       @sound = SF::Sound.new
       @choice_index = 0
       @choice_selected = nil
+
+      @pages = get_pages(message)
+
+      reset_message
     end
 
     # NOTE: this has to be overridden by a custom font
@@ -197,6 +193,13 @@ module GSF
       1
     end
 
+    def get_pages(message : String)
+      text.string = message
+      text_width = text.global_bounds.width
+      lines = width < text_width ? get_lines(message) : [message]
+      lines.in_slices_of(max_lines)
+    end
+
     def update(keys : Keys)
       return if hide?
       return if animate? && !@animate_timer.done?
@@ -261,6 +264,15 @@ module GSF
       end
     end
 
+    def update_data(message : String, choices = [] of ChoiceData)
+      @pages = get_pages(message)
+      @page_index = 0
+      @choices = choices
+
+      reset_message
+      reset_choice_selected
+    end
+
     def reset_message
       @message = pages[page_index].join("\n")
       @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
@@ -276,7 +288,8 @@ module GSF
 
       if animate?
         @show = false
-        @choice_selected = nil
+
+        reset_choice_selected
         @animate_timer.start
       else
         hide_reset
@@ -287,8 +300,14 @@ module GSF
       @hide = true
       @animate_timer = Timer.new(animate_duration)
       @page_index = 0
-      @choice_selected = nil
+
+      reset_choice_selected
       reset_message
+    end
+
+    def reset_choice_selected
+      @choice_selected = nil
+      @choice_index = 0
     end
 
     def x
@@ -319,7 +338,7 @@ module GSF
       end
     end
 
-    def get_lines
+    def get_lines(message : String)
       lines = [""]
       line_index = 0
       text.string = " "
@@ -380,7 +399,7 @@ module GSF
       text_color = @text.fill_color
 
       choices.each_with_index do |choice, index|
-        text.string = choice
+        text.string = choice[:label]
         px = x + width + padding * 2 + outline_thickness * 2 + choice_padding
         py = y + (@char_height + choice_padding * 3 + outline_thickness * 2) * index
         text_width = text.global_bounds.width
@@ -413,7 +432,7 @@ module GSF
   class BottomCenteredMessage < Message
     BottomPadding = Message::Padding * 3
 
-    def initialize(message = "", typing = true, animate = true, choices = [] of String)
+    def initialize(message = "", typing = true, animate = true, choices = [] of ChoiceData)
       test_text = SF::Text.new(" ", font, font_size)
       test_text.line_spacing = line_spacing
 
@@ -422,7 +441,7 @@ module GSF
       super(
         cx: (Screen.width / 2).to_i,
         bot_y: bottom_padding,
-        max_width: (Screen.width / 2).to_i,
+        width: (Screen.width / 2).to_i,
         message: message,
         typing: typing,
         animate: animate,
