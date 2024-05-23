@@ -29,11 +29,12 @@ module GSF
     LineSpacing = 2.25
     TypeDuration = 69.milliseconds
     AnimateDuration = 300.milliseconds
+    AnimateArrowDuration = 500.milliseconds
     BackgroundColor = SF::Color.new(17, 17, 17, 170)
     TextColor = SF::Color::White
     OutlineColor = SF::Color.new(102, 102, 102)
     OutlineThickness = 4
-    SelectedChoiceTextColor = SF::Color.new(0, 255, 0)
+    ArrowBackgroundColor = SF::Color.new(17, 17, 17)
 
     def initialize(
       @cx,
@@ -53,12 +54,13 @@ module GSF
 
       @text.string = "M"
       @char_height = @text.global_bounds.height
-      @height = @char_height * max_lines
+      @height = ((font_size + line_spacing) * (max_lines + 2) - line_spacing).to_f32
 
       @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
       @text.string = typing? ? "" : @message
 
       @animate_timer = Timer.new(animate_duration)
+      @animate_arrow_timer = Timer.new(animate_arrow_duration)
 
       @show = false
       @hide = true
@@ -117,8 +119,8 @@ module GSF
       padding / 4
     end
 
-    def selected_choice_text_color
-      SelectedChoiceTextColor
+    def arrow_background_color
+      ArrowBackgroundColor
     end
 
     def type_duration
@@ -127,6 +129,10 @@ module GSF
 
     def animate_duration
       AnimateDuration
+    end
+
+    def animate_arrow_duration
+      AnimateArrowDuration
     end
 
     def next_page_keys
@@ -200,6 +206,14 @@ module GSF
       lines.in_slices_of(max_lines)
     end
 
+    def animated?
+      !animate? || @animate_timer.done?
+    end
+
+    def typed?
+      !typing? || @typing_timer.done?
+    end
+
     def update(keys : Keys)
       return if hide?
       return if animate? && !@animate_timer.done?
@@ -213,7 +227,9 @@ module GSF
         return
       end
 
-      if !typing? || @typing_timer.done?
+      if typed?
+        @animate_arrow_timer.start if !@animate_arrow_timer.started? || @animate_arrow_timer.done?
+
         if keys.just_pressed?(next_page_keys)
           play_sound(next_page_sound_buffer, next_page_sound_pitch)
 
@@ -230,7 +246,7 @@ module GSF
         @typing_timer.duration = type_duration
       end
 
-      if page_index >= pages.size - 1 && choices.any? && (!typing? || @typing_timer.done?)
+      if page_index >= pages.size - 1 && choices.any? && typed?
         if keys.just_pressed?(next_choice_keys)
           play_sound(next_choice_sound_buffer, next_choice_sound_pitch)
           @choice_index += 1
@@ -362,11 +378,15 @@ module GSF
 
       draw_border(window)
 
-      if show? && (!animate? || @animate_timer.done?)
-        draw_text(window)
+      return unless show? && animated?
 
-        if (!typing? || @typing_timer.done?) && page_index >= pages.size - 1
+      draw_text(window)
+
+      if typed?
+        if page_index >= pages.size - 1
           draw_choices(window)
+        else
+          draw_arrow(window)
         end
       end
     end
@@ -396,36 +416,53 @@ module GSF
     def draw_choices(window)
       return if choices.empty?
 
-      text_color = @text.fill_color
-
       choices.each_with_index do |choice, index|
         text.string = choice[:label]
         px = x + width + padding * 2 + outline_thickness * 2 + choice_padding
         py = y + (@char_height + choice_padding * 3 + outline_thickness * 2) * index
         text_width = text.global_bounds.width
 
-        draw_choice_border(window, px, py, text_width)
-
-        @text.fill_color = selected_choice_text_color if index == @choice_index
+        draw_choice_border(window, px, py, text_width, index == @choice_index)
 
         text.position = {px + choice_padding, py + choice_padding}
 
         window.draw(text)
-
-        # set text color back to normal if it was selected
-        @text.fill_color = text_color if index == @choice_index
       end
     end
 
-    def draw_choice_border(window, px, py, text_width)
+    def draw_choice_border(window, px, py, text_width, selected)
       rect = SF::RectangleShape.new
       rect.size = SF.vector2f(text_width + choice_padding * 2, @char_height + choice_padding * 2)
       rect.fill_color = background_color
-      rect.outline_color = outline_color
+      rect.outline_color = selected ? outline_color : background_color
       rect.outline_thickness = outline_thickness
       rect.position = {px, py}
 
       window.draw(rect)
+    end
+
+    def draw_arrow(window)
+      radius = 28
+      animate_height = 32
+
+      if @animate_arrow_timer.percent <= 0.5
+        animate_y = [@animate_arrow_timer.percent, 1].min * animate_height
+      else
+        animate_y = animate_height - [@animate_arrow_timer.percent, 1].min * animate_height
+      end
+
+      px = x + width / 2 + padding
+      py = y + height + padding * 2 - animate_height / 2 + animate_y
+
+      triangle = SF::CircleShape.new(radius, 3)
+      triangle.fill_color = arrow_background_color
+      triangle.outline_color = outline_color
+      triangle.outline_thickness = outline_thickness
+      triangle.origin = {radius, radius}
+      triangle.position = {px, py}
+      triangle.rotation = 180
+
+      window.draw(triangle)
     end
   end
 
