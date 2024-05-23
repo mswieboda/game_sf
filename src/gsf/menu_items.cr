@@ -13,7 +13,7 @@ module GSF
     def initialize(
       font : SF::Font,
       items = [] of String,
-      size = 72,
+      size = 32,
       text_color = SF::Color::White,
       text_color_focused = SF::Color::Green,
       initial_focused_index = -1,
@@ -35,7 +35,7 @@ module GSF
       items.each_with_index do |item, index|
         # NOTE: for now centered horizontally and vertically on the whole screen
         x = Screen.width / 2
-        y = Screen.height / 2 + index * size * 2 - size * 3
+        y = Screen.height / 4 + index * size * 2 - size * 3
 
         @menu_items << MenuItem.new(
           x: x,
