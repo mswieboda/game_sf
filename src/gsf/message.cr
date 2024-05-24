@@ -383,7 +383,7 @@ module GSF
       draw_text(window)
 
       if typed?
-        if page_index >= pages.size - 1
+        if page_index >= pages.size - 1 && choices.any?
           draw_choices(window)
         else
           draw_arrow(window)
