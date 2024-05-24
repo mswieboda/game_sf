@@ -20,6 +20,7 @@ module GSF
 
     delegate choice_selected, to: @message
     delegate show?, to: @message
+    delegate hide?, to: @message
 
     # NOTE: this can be overriden for a custom BottomCenteredMessage class
     def message_class
