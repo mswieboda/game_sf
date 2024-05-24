@@ -4,8 +4,8 @@ module GSF
   class Dialog
     alias Data = Hash(String, NamedTuple(message: String, choices: Array(Message::ChoiceData)))
 
+    property data : Data
     getter choice_selected : Message::ChoiceData?
-    getter data : Data
 
     @message : Message
 
