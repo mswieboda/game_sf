@@ -41,16 +41,15 @@ module GSF
       when SF::Event::MouseButtonReleased
         mouse.released(event.button)
       when SF::Event::JoystickButtonPressed # : joystick_id, button
-        puts ">>> JoystickButtonPressed #{event.joystick_id} #{event.button}"
         joysticks.pressed(event.joystick_id, event.button)
       when SF::Event::JoystickButtonReleased # : joystick_id, button
-        puts ">>> JoystickButtonReleased #{event.joystick_id} #{event.button}"
         joysticks.released(event.joystick_id, event.button)
       when SF::Event::JoystickMoved # : joystick_id, axis, position
+        joysticks.axis_moved(event.joystick_id, event.axis, event.position)
       when SF::Event::JoystickConnected # : joystick_id
-        puts ">>> JoystickConnected #{event.joystick_id}"
+        joysticks.connect(event.joystick_id)
       when SF::Event::JoystickDisconnected # : joystick_id
-        puts ">>> JoystickDisconnected #{event.joystick_id}"
+        joysticks.disconnect(event.joystick_id)
       end
     end
 

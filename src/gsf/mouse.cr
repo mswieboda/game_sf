@@ -7,6 +7,8 @@ module GSF
     getter x
     getter y
 
+    @buttons : Hash(Button, ButtonState)
+
     def initialize(x = 0, y = 0)
       @x = x
       @y = y

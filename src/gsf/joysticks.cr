@@ -1,8 +1,7 @@
 module GSF
+  # NOTE: buttons and axes mapped from Xbox 360 controller
+  #       not sure if these are standardized across different controllers
   class Joysticks
-    alias Axis = SF::Joystick::Axis
-
-    # NOTE: buttons mapped from Xbox 360 controller
     enum Button
       A
       B
@@ -18,76 +17,144 @@ module GSF
 
     Util.extract GSF::Joysticks::Button
 
+    alias Axis = SF::Joystick::Axis
+
+    LeftStickX = Axis::X
+    LeftStickY = Axis::Y
+    DPadX = Axis::PovX
+    DPadY = Axis::PovY
+    RightStickX = Axis::U
+    RightStickY = Axis::V
+    # NOTE: Axis::Z is a combination of Left and Right Triggers, they cancel each other out
+    Trigger = Axis::Z
+    LeftTrigger = Axis::Z
+    RightTrigger = Axis::Z
+
+    @joysticks : Hash(UInt32, JoystickState)
+
     def initialize
       @joysticks = Hash(UInt32, JoystickState).new
     end
 
     def reset
-      @joysticks.each do |(joystick_id, state)|
+      @joysticks.each do |(id, state)|
         state.reset
       end
     end
 
-    def pressed(joystick_id : UInt32, button : UInt32)
-      if @joysticks.has_key?(joystick_id)
-        @joysticks[joystick_id].pressed(button)
-      else
-        @joysticks[joystick_id] = JoystickState.new
+    def connect(id : UInt32)
+      unless @joysticks.has_key?(id)
+        @joysticks[id] = JoystickState.new
       end
     end
 
-    def released(joystick_id : UInt32, button : UInt32)
-      if @joysticks.has_key?(joystick_id)
-        @joysticks[joystick_id].released(button)
-      else
-        @joysticks[joystick_id] = JoystickState.new
-      end
+    def disconnect(id : UInt32)
+      @joysticks.delete(id)
     end
 
-    def pressed?(joystick_id : UInt32, button : Button)
-      @joysticks.has_key?(joystick_id) && @joysticks[joystick_id].pressed?(button)
+    def connected?(id : UInt32)
+      @joysticks.has_key?(id)
+    end
+
+    def pressed(id : UInt32, button : UInt32)
+      unless connected?(id)
+        @joysticks[id] = JoystickState.new
+      end
+
+      @joysticks[id].pressed(button)
+    end
+
+    def released(id : UInt32, button : UInt32)
+      unless connected?(id)
+        @joysticks[id] = JoystickState.new
+      end
+
+      @joysticks[id].released(button)
+    end
+
+    def axis_moved(id : UInt32, axis : Axis, position : Float32)
+      unless connected?(id)
+        @joysticks[id] = JoystickState.new
+      end
+
+      @joysticks[id].axis_moved(axis, position)
+    end
+
+    def pressed?(id : UInt32, button : Button)
+      connected?(id) && @joysticks[id].pressed?(button)
     end
 
     def pressed?(button : Button)
       pressed?(0, button)
     end
 
-    def pressed?(joystick_id : UInt32, buttons : Array(Button))
-      buttons.any? { |button| pressed?(joystick_id, button) }
+    def pressed?(id : UInt32, buttons : Array(Button))
+      buttons.any? { |button| pressed?(id, button) }
     end
 
     def pressed?(buttons : Array(Button))
       pressed?(0, buttons)
     end
 
-    def any_pressed?(joystick_id = 0)
-      @joysticks.has_key?(joystick_id) && @joysticks[joystick_id].any_pressed?
+    def any_pressed?(id = 0)
+      connected?(id) && @joysticks[id].any_pressed?
     end
 
-    def just_pressed?(joystick_id : UInt32, button : Button)
-      @joysticks.has_key?(joystick_id) && @joysticks[joystick_id].just_pressed?(button)
+    def just_pressed?(id : UInt32, button : Button)
+      @joysticks.has_key?(id) && @joysticks[id].just_pressed?(button)
     end
 
     def just_pressed?(button : Button)
       just_pressed?(0, button)
     end
 
-    def just_pressed?(joystick_id : UInt32, buttons : Array(Button))
-      buttons.any? { |button| just_pressed?(joystick_id, button) }
+    def just_pressed?(id : UInt32, buttons : Array(Button))
+      buttons.any? { |button| just_pressed?(id, button) }
     end
 
     def just_pressed?(buttons : Array(Button))
       just_pressed?(0, buttons)
     end
 
-    def any_just_pressed?(joystick_id = 0)
-      @joysticks.has_key?(joystick_id) && @joysticks[joystick_id].any_just_pressed?
+    def any_just_pressed?(id = 0)
+      @joysticks.has_key?(id) && @joysticks[id].any_just_pressed?
+    end
+
+    def axis_position(id : UInt32, axis : Axis)
+      if @joysticks.has_key?(id)
+        @joysticks[id].axis_position(axis)
+      else
+        0_f32
+      end
+    end
+
+    def axis_position(axis : Axis)
+      axis_position(0, axis)
+    end
+
+    def axis_moved?(id : UInt32, axis : Axis, amount : Float32)
+      return false unless @joysticks.has_key?(id)
+
+      position = @joysticks[id].axis_position(axis)
+
+      if amount > 0
+        position > amount
+      elsif amount < 0
+        position < amount
+      else
+        position != amount
+      end
+    end
+
+    def axis_moved?(axis : Axis, amount : Float32)
+      axis_moved?(0, axis, amount)
     end
   end
 
   class JoystickState
     def initialize
       @buttons = Hash(UInt32, ButtonState).new
+      @axes = Hash(Joysticks::Axis, Float32).new
     end
 
     def reset
@@ -137,6 +204,18 @@ module GSF
     def any_just_pressed?
       @buttons.any do |(button, state)|
         state.just_pressed?
+      end
+    end
+
+    def axis_moved(axis : Joysticks::Axis, position : Float32)
+      @axes[axis] = position
+    end
+
+    def axis_position(axis : Joysticks::Axis)
+      if @axes.has_key?(axis)
+        @axes[axis]
+      else
+        0_f32
       end
     end
   end

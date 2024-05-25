@@ -4,6 +4,8 @@ module GSF
 
     Util.extract SF::Keyboard::Key
 
+    @keys : Hash(Key, KeyState)
+
     def initialize
       @keys = Hash(Key, KeyState).new
     end
