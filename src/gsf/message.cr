@@ -23,10 +23,10 @@ module GSF
     getter choice_index
     getter choice_selected : ChoiceData?
 
-    Padding = 64
-    FontSize = 28
+    Padding = 24
+    FontSize = 16
     MaxLines = 4
-    LineSpacing = 2.25
+    LineSpacing = 2
     TypeDuration = 69.milliseconds
     AnimateDuration = 300.milliseconds
     AnimateArrowDuration = 500.milliseconds
@@ -34,6 +34,7 @@ module GSF
     TextColor = SF::Color::White
     OutlineColor = SF::Color.new(102, 102, 102)
     OutlineThickness = 4
+    ArrowRadius = 16
     ArrowBackgroundColor = SF::Color.new(17, 17, 17)
 
     def initialize(
@@ -117,6 +118,10 @@ module GSF
 
     def choice_padding
       padding / 4
+    end
+
+    def arrow_radius
+      ArrowRadius
     end
 
     def arrow_background_color
@@ -442,8 +447,8 @@ module GSF
     end
 
     def draw_arrow(window)
-      radius = 28
-      animate_height = 32
+      radius = arrow_radius
+      animate_height = radius * 2
 
       if @animate_arrow_timer.percent <= 0.5
         animate_y = [@animate_arrow_timer.percent, 1].min * animate_height

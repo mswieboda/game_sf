@@ -1,31 +1,22 @@
 module GSF
   class Screen
-    @@width = 1
-    @@height = 1
-    @@scaling_factor = 1_f64
+    @@view : SF::View = SF::View.new
 
-    DefaultHeight = 1080
+    DefaultWidth = 1920_f32
+    DefaultHeight = 1080_f32
 
     def self.width
-      @@width
+      @@view.size.x
     end
 
     def self.height
-      @@height
+      @@view.size.y
     end
 
-    def self.scaling_factor
-      @@scaling_factor
-    end
+    def self.init(window : SF::RenderWindow, default_width = DefaultWidth, default_height = DefaultHeight)
+      @@view = window.view
 
-    def self.video_mode
-      @@mode ||= SF::VideoMode.desktop_mode
-    end
-
-    def self.init(window : SF::RenderWindow, default_height = DefaultHeight)
-      @@width = window.size.x
-      @@height = window.size.y
-      @@scaling_factor = @@height / default_height / 2_f64
+      @@view.reset(SF.float_rect(0_f32, 0_f32, default_width, default_height))
     end
   end
 end

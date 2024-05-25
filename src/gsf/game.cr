@@ -10,16 +10,17 @@ module GSF
 
     def initialize(
       title = "",
-      mode = Screen.video_mode,
+      mode = SF::VideoMode.desktop_mode,
       style = SF::Style::None,
       vsync = true,
       background_color = DefaultBackgroundColor,
+      default_width = Screen::DefaultWidth,
       default_height = Screen::DefaultHeight
     )
       @window = SF::RenderWindow.new(mode, title, style)
       window.vertical_sync_enabled = vsync
 
-      Screen.init(window, default_height)
+      Screen.init(window, default_width, default_height)
 
       @background_color = background_color
       @exit = false
