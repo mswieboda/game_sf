@@ -50,6 +50,9 @@ module GSF
 
     def event(event)
       case event
+      when SF::Event::Resized
+        # update the view to the new size of the window
+        window.view = SF::View.new(SF.float_rect(0, 0, event.width, event.height))
       when SF::Event::Closed
         window.close
       end
