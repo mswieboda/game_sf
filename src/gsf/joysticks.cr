@@ -30,7 +30,7 @@ module GSF
     LeftTrigger = Axis::Z
     RightTrigger = Axis::Z
 
-    AxisThreshold = 10
+    AxisMovedThreshold = 10
 
     @joysticks : Hash(UInt32, JoystickState)
 
@@ -152,13 +152,57 @@ module GSF
       axis_moved?(0, axis, amount)
     end
 
-    Util.stick_directions(["LeftStick", "DPad", "RightStick"])
+    # NOTE: macro creates helper methods for axes
+    # for example, with LeftStick makes:
+    # - left_stick_moved_up?(id, amount = AxisMovedThreshold)
+    # - left_stick_moved_up?(amount = AxisMovedThreshold)
+    # - left_stick_moved_down?(id, amount = AxisMovedThreshold)
+    # - left_stick_moved_down?(amount = AxisMovedThreshold)
+    # - left_stick_moved_left?(id, amount = AxisMovedThreshold)
+    # - left_stick_moved_left?(amount = AxisMovedThreshold)
+    # - left_stick_moved_right?(id, amount = AxisMovedThreshold)
+    # - left_stick_moved_right?(amount = AxisMovedThreshold)
+    # and same for d_pad_*? and right_stick_*? methods
+    Util.axes_moved_helpers(["LeftStick", "DPad", "RightStick"])
+
+    def axis_just_moved_positive?(id : UInt32, axis : Axis)
+      return false unless connected?(id)
+
+      @joysticks[id].axis_just_moved_positive?(axis)
+    end
+
+    def axis_just_moved_positive?(axis : Axis)
+      axis_just_moved_positive?(0, axis)
+    end
+
+    def axis_just_moved_negative?(id : UInt32, axis : Axis)
+      return false unless connected?(id)
+
+      @joysticks[id].axis_just_moved_negative?(axis)
+    end
+
+    def axis_just_moved_negative?(axis : Axis)
+      axis_just_moved_negative?(0, axis)
+    end
+
+    # NOTE: macro creates helper methods for axes
+    # for example, with LeftStick makes:
+    # - left_stick_just_moved_up?(id, amount = AxisMovedThreshold)
+    # - left_stick_just_moved_up?(amount = AxisMovedThreshold)
+    # - left_stick_just_moved_down?(id, amount = AxisMovedThreshold)
+    # - left_stick_just_moved_down?(amount = AxisMovedThreshold)
+    # - left_stick_just_moved_left?(id, amount = AxisMovedThreshold)
+    # - left_stick_just_moved_left?(amount = AxisMovedThreshold)
+    # - left_stick_just_moved_right?(id, amount = AxisMovedThreshold)
+    # - left_stick_just_moved_right?(amount = AxisMovedThreshold)
+    # and same for d_pad_*? and right_stick_*? methods
+    Util.axes_just_moved_helpers(["LeftStick", "DPad", "RightStick"])
   end
 
   class JoystickState
     def initialize
       @buttons = Hash(UInt32, ButtonState).new
-      @axes = Hash(Joysticks::Axis, Float32).new
+      @axes = Hash(Joysticks::Axis, AxisState).new
     end
 
     def reset
@@ -212,15 +256,27 @@ module GSF
     end
 
     def axis_moved(axis : Joysticks::Axis, position : Float32)
-      @axes[axis] = position
+      if @axes.has_key?(axis)
+        @axes[axis].position = position
+      else
+        @axes[axis] = AxisState.new(position)
+      end
     end
 
     def axis_position(axis : Joysticks::Axis)
       if @axes.has_key?(axis)
-        @axes[axis]
+        @axes[axis].position
       else
         0_f32
       end
+    end
+
+    def axis_just_moved_positive?(axis : Joysticks::Axis)
+      @axes.has_key?(axis) && @axes[axis].just_moved_positive?
+    end
+
+    def axis_just_moved_negative?(axis : Joysticks::Axis)
+      @axes.has_key?(axis) && @axes[axis].just_moved_negative?
     end
   end
 
@@ -248,6 +304,37 @@ module GSF
 
     def just_pressed?
       pressed? && !seen?
+    end
+  end
+
+  class AxisState
+    getter position : Float32
+    getter? just_moved_positive
+    getter? just_moved_negative
+
+    JustMovedThreshold = 75
+
+    def initialize(position)
+      @position = position
+      @just_moved_positive = false
+      @just_moved_negative = false
+    end
+
+    def position=(position : Float32)
+      @position = position
+
+      if !just_moved_positive? && position > JustMovedThreshold
+        @just_moved_positive = true
+      end
+
+      if !just_moved_negative? && position < -JustMovedThreshold
+        @just_moved_negative = true
+      end
+    end
+
+    def seen
+      @just_moved_positive = false
+      @just_moved_negative = false
     end
   end
 end
