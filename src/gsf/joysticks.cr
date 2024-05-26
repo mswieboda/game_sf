@@ -30,6 +30,8 @@ module GSF
     LeftTrigger = Axis::Z
     RightTrigger = Axis::Z
 
+    AxisThreshold = 10
+
     @joysticks : Hash(UInt32, JoystickState)
 
     def initialize
@@ -101,7 +103,7 @@ module GSF
     end
 
     def just_pressed?(id : UInt32, button : Button)
-      @joysticks.has_key?(id) && @joysticks[id].just_pressed?(button)
+      connected?(id) && @joysticks[id].just_pressed?(button)
     end
 
     def just_pressed?(button : Button)
@@ -117,11 +119,11 @@ module GSF
     end
 
     def any_just_pressed?(id = 0)
-      @joysticks.has_key?(id) && @joysticks[id].any_just_pressed?
+      connected?(id) && @joysticks[id].any_just_pressed?
     end
 
     def axis_position(id : UInt32, axis : Axis)
-      if @joysticks.has_key?(id)
+      if connected?(id)
         @joysticks[id].axis_position(axis)
       else
         0_f32
@@ -132,8 +134,8 @@ module GSF
       axis_position(0, axis)
     end
 
-    def axis_moved?(id : UInt32, axis : Axis, amount : Float32)
-      return false unless @joysticks.has_key?(id)
+    def axis_moved?(id : UInt32, axis : Axis, amount : Number)
+      return false unless connected?(id)
 
       position = @joysticks[id].axis_position(axis)
 
@@ -146,9 +148,11 @@ module GSF
       end
     end
 
-    def axis_moved?(axis : Axis, amount : Float32)
+    def axis_moved?(axis : Axis, amount : Number)
       axis_moved?(0, axis, amount)
     end
+
+    Util.stick_directions(["LeftStick", "DPad", "RightStick"])
   end
 
   class JoystickState
