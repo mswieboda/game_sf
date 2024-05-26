@@ -160,8 +160,16 @@ module GSF
       [Keys::Tab, Keys::S, Keys::Down]
     end
 
-    def prev_choice_keys
+    def next_choice_joysticks?(joysticks : Joysticks)
+      joysticks.left_stick_just_moved_down? || joysticks.d_pad_just_moved_down?
+    end
+
+    def previous_choice_keys
       [Keys::W, Keys::Up]
+    end
+
+    def previous_choice_joysticks?(joysticks : Joysticks)
+      joysticks.left_stick_just_moved_up? || joysticks.d_pad_just_moved_up?
     end
 
     # NOTE: this has to be overridden by a custom SF::SoundBuffer
@@ -201,12 +209,12 @@ module GSF
     end
 
     # NOTE: this has to be overridden by a custom SF::SoundBuffer
-    #       like `@@prev_choice_sound_buffer ||= SF::SoundBuffer.from_file("./assets/prev_choice.wav")`
-    def prev_choice_sound_buffer : SF::SoundBuffer?
+    #       like `@@previous_choice_sound_buffer ||= SF::SoundBuffer.from_file("./assets/previous_choice.wav")`
+    def previous_choice_sound_buffer : SF::SoundBuffer?
       nil
     end
 
-    def prev_choice_sound_pitch
+    def previous_choice_sound_pitch
       # NOTE: override to vary or change the pitch
       # ex: `rand(0.9..1.1)`
       1
@@ -260,12 +268,12 @@ module GSF
       end
 
       if page_index >= pages.size - 1 && choices.any? && typed?
-        if keys.just_pressed?(next_choice_keys)
+        if keys.just_pressed?(next_choice_keys) || next_choice_joysticks?(joysticks)
           play_sound(next_choice_sound_buffer, next_choice_sound_pitch)
           @choice_index += 1
           @choice_index = 0 if @choice_index >= choices.size
-        elsif keys.just_pressed?(prev_choice_keys)
-          play_sound(prev_choice_sound_buffer, prev_choice_sound_pitch)
+        elsif keys.just_pressed?(previous_choice_keys) || previous_choice_joysticks?(joysticks)
+          play_sound(previous_choice_sound_buffer, previous_choice_sound_pitch)
           @choice_index -= 1
           @choice_index = choices.size - 1 if @choice_index < 0
         end
