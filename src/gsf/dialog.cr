@@ -37,10 +37,10 @@ module GSF
       @message.show
     end
 
-    def update(keys : Keys)
+    def update(keys : Keys, joysticks : Joysticks)
       @choice_selected = nil if @choice_selected
 
-      @message.update(keys)
+      @message.update(keys, joysticks)
 
       if choice = @message.choice_selected
         key = choice[:key]

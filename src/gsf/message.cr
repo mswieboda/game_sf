@@ -144,8 +144,16 @@ module GSF
       [Keys::Enter, Keys::E, Keys::Space]
     end
 
+    def next_page_joystick_buttons
+      [Joysticks::A]
+    end
+
     def skip_typing_keys
       [Keys::Escape, Keys::Q, Keys::Backspace, Keys::Delete]
+    end
+
+    def skip_typing_joystick_buttons
+      [Joysticks::B, Joysticks::Back]
     end
 
     def next_choice_keys
@@ -219,7 +227,7 @@ module GSF
       !typing? || @typing_timer.done?
     end
 
-    def update(keys : Keys)
+    def update(keys : Keys, joysticks : Joysticks)
       return if hide?
       return if animate? && !@animate_timer.done?
 
@@ -235,7 +243,7 @@ module GSF
       if typed?
         @animate_arrow_timer.start if !@animate_arrow_timer.started? || @animate_arrow_timer.done?
 
-        if keys.just_pressed?(next_page_keys)
+        if keys.just_pressed?(next_page_keys) || joysticks.just_pressed?(next_page_joystick_buttons)
           play_sound(next_page_sound_buffer, next_page_sound_pitch)
 
           if page_index >= pages.size - 1 && choices.any?
@@ -244,7 +252,7 @@ module GSF
             next_page_or_hide
           end
         end
-      elsif typing? && !@typing_timer.done? && keys.just_pressed?(skip_typing_keys)
+      elsif typing? && !@typing_timer.done? && (keys.just_pressed?(skip_typing_keys) || joysticks.just_pressed?(skip_typing_joystick_buttons))
         play_sound(skip_typing_sound_buffer, skip_typing_sound_pitch)
 
         # forces skipping the animation
