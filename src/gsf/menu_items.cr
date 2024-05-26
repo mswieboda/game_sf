@@ -3,12 +3,6 @@ module GSF
     alias KeyValue = Tuple(String, String)
 
     getter menu_items
-    getter? use_keyboard
-    getter? use_mouse
-    getter keys_next
-    getter keys_previous
-    getter keys_select
-    getter mouse_select
 
     def initialize(
       font : SF::Font,
@@ -16,21 +10,9 @@ module GSF
       size = 72,
       text_color = SF::Color::White,
       text_color_focused = SF::Color::Green,
-      initial_focused_index = -1,
-      use_keyboard = true,
-      use_mouse = false,
-      keys_next = [Keys::Down, Keys::S, Keys::RShift, Keys::Tab],
-      keys_previous = [Keys::Up, Keys::W, Keys::LShift],
-      keys_select = [Keys::Space, Keys::Enter],
-      mouse_select = Mouse::Left
+      initial_focused_index = -1
     )
       @menu_items = [] of MenuItem
-      @use_keyboard = use_keyboard
-      @use_mouse = use_mouse
-      @keys_next = keys_next
-      @keys_previous = keys_previous
-      @keys_select = keys_select
-      @mouse_select = mouse_select
 
       items.each_with_index do |item, index|
         # NOTE: for now centered horizontally and vertically on the whole screen
@@ -52,14 +34,53 @@ module GSF
       end
     end
 
-    def selected?(keys, mouse, _joysticks)
-      return false unless focused_item
+    def keyboard?
+      true
+    end
 
-      if use_keyboard?
-        keys.just_pressed?(keys_select)
-      elsif use_mouse?
-        mouse.just_pressed?(mouse_select)
-      end
+    def joysticks?
+      true
+    end
+
+    def mouse?
+      false
+    end
+
+    def keys_next
+      [Keys::Down, Keys::S]
+    end
+
+    def keys_previous
+      [Keys::Up, Keys::W]
+    end
+
+    def keys_select
+      [Keys::Space, Keys::Enter]
+    end
+
+    def joysticks_next?(joysticks : Joysticks)
+      joysticks.left_stick_just_moved_down? || joysticks.d_pad_just_moved_down?
+    end
+
+    def joysticks_previous?(joysticks : Joysticks)
+      joysticks.left_stick_just_moved_up? || joysticks.d_pad_just_moved_up?
+    end
+
+    def joysticks_select
+      [Joysticks::A, Joysticks::Start]
+    end
+
+    def mouse_select
+      Mouse::Left
+    end
+
+    def selected?(keys, mouse, joysticks)
+      return false unless focused_item
+      return true if keyboard? && keys.just_pressed?(keys_select)
+      return true if joysticks? && joysticks.just_pressed?(joysticks_select)
+      return true if mouse? && mouse.just_pressed?(mouse_select)
+
+      false
     end
 
     def focused_key
@@ -80,28 +101,45 @@ module GSF
       end
     end
 
-    def update(frame_time, keys : Keys, mouse : Mouse)
+    def update(frame_time, keys : Keys, mouse : Mouse, joysticks : Joysticks)
       menu_items.each(&.update(frame_time))
 
-      keyboard_update(keys) if use_keyboard?
-      mouse_update(mouse) if use_mouse?
+      keyboard_update(keys) if keyboard?
+      joysticks_update(joysticks) if keyboard?
+      mouse_update(mouse) if mouse?
+    end
+
+    def previous_item
+      if index = menu_items.index(&.focused?) || 0
+        new_index = index - 1 >= 0 ? index - 1 : menu_items.size - 1
+
+        menu_items[index].blur
+        menu_items[new_index].focus
+      end
+    end
+
+    def next_item
+      if index = menu_items.index(&.focused?) || -1
+        new_index = index + 1 < menu_items.size ? index + 1 : 0
+
+        menu_items[index].blur
+        menu_items[new_index].focus
+      end
     end
 
     def keyboard_update(keys : Keys)
       if keys.just_pressed?(keys_previous)
-        if index = menu_items.index(&.focused?) || 0
-          new_index = index - 1 >= 0 ? index - 1 : menu_items.size - 1
-
-          menu_items[index].blur
-          menu_items[new_index].focus
-        end
+        previous_item
       elsif keys.just_pressed?(keys_next)
-        if index = menu_items.index(&.focused?) || -1
-          new_index = index + 1 < menu_items.size ? index + 1 : 0
+        next_item
+      end
+    end
 
-          menu_items[index].blur
-          menu_items[new_index].focus
-        end
+    def joysticks_update(joysticks : Joysticks)
+      if joysticks_previous?(joysticks)
+        previous_item
+      elsif joysticks_next?(joysticks)
+        next_item
       end
     end
 
