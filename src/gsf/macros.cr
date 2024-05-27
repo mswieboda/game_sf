@@ -47,7 +47,7 @@ module GSF
     macro axes_just_moved_helpers(axes)
       {% for axis in axes %}
         def {{axis.id.underscore}}_just_moved_up?(id : UInt32)
-          axis_just_moved_{% unless axis == "DPad" %}positive{% else %}negative{% end %}?(id, {{axis.id}}Y)
+          axis_just_moved_{% if axis == "DPad" %}positive{% else %}negative{% end %}?(id, {{axis.id}}Y)
         end
 
         def {{axis.id.underscore}}_just_moved_up?
@@ -55,7 +55,7 @@ module GSF
         end
 
         def {{axis.id.underscore}}_just_moved_down?(id : UInt32)
-          axis_just_moved_{% unless axis == "DPad" %}negative{% else %}positive{% end %}?(id, {{axis.id}}Y)
+          axis_just_moved_{% if axis == "DPad" %}negative{% else %}positive{% end %}?(id, {{axis.id}}Y)
         end
 
         def {{axis.id.underscore}}_just_moved_down?

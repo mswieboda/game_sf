@@ -30,7 +30,7 @@ module GSF
     LeftTrigger = Axis::Z
     RightTrigger = Axis::Z
 
-    AxisMovedThreshold = 10
+    AxisMovedThreshold = 50
 
     @joysticks : Hash(UInt32, JoystickState)
 
@@ -209,6 +209,11 @@ module GSF
       @buttons.each do |(button, state)|
         state.seen unless state.seen?
       end
+
+      @axes.each do |(axis, state)|
+        state.positive_seen unless state.positive_just_seen?
+        state.negative_seen unless state.negative_just_seen?
+      end
     end
 
     def pressed(button : UInt32)
@@ -309,32 +314,45 @@ module GSF
 
   class AxisState
     getter position : Float32
-    getter? just_moved_positive
-    getter? just_moved_negative
+    getter? positive_just_seen
+    getter? negative_just_seen
 
     JustMovedThreshold = 75
 
     def initialize(position)
       @position = position
-      @just_moved_positive = false
-      @just_moved_negative = false
+      @positive_just_seen = false
+      @negative_just_seen = false
     end
 
     def position=(position : Float32)
+      @positive_just_seen = moved_positive? && positive_just_seen?
+      @negative_just_seen = moved_negative? && negative_just_seen?
       @position = position
-
-      if !just_moved_positive? && position > JustMovedThreshold
-        @just_moved_positive = true
-      end
-
-      if !just_moved_negative? && position < -JustMovedThreshold
-        @just_moved_negative = true
-      end
     end
 
-    def seen
-      @just_moved_positive = false
-      @just_moved_negative = false
+    def moved_positive?
+      position >= JustMovedThreshold
+    end
+
+    def moved_negative?
+      position <= -JustMovedThreshold
+    end
+
+    def just_moved_positive?
+      moved_positive? && !positive_just_seen?
+    end
+
+    def just_moved_negative?
+      moved_negative? && !negative_just_seen?
+    end
+
+    def positive_seen
+      @positive_just_seen = true
+    end
+
+    def negative_seen
+      @negative_just_seen = true
     end
   end
 end
