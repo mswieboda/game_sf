@@ -3,29 +3,42 @@ module GSF
     getter window : SF::RenderWindow
     getter clock : SF::Clock
     getter? exit
-    property background_color : SF::Color
     getter stage : Stage
 
     DefaultBackgroundColor = SF::Color.new(0, 0, 0)
 
-    def initialize(
-      title = "",
-      mode = SF::VideoMode.desktop_mode,
-      style = SF::Style::None,
-      vsync = true,
-      background_color = DefaultBackgroundColor,
-      default_width = Screen::DefaultWidth,
-      default_height = Screen::DefaultHeight
-    )
+    def initialize(title = "", mode = SF::VideoMode.desktop_mode, style = SF::Style::None)
+      if style.fullscreen?
+        mode = SF::VideoMode.fullscreen_modes.first
+      end
+
       @window = SF::RenderWindow.new(mode, title, style)
-      window.vertical_sync_enabled = vsync
 
-      Screen.init(window, default_width, default_height)
+      @window.vertical_sync_enabled = vsync
+      @window.joystick_threshold = joystick_threshold
+      @window.mouse_cursor_visible = mouse_cursor_visible
 
-      @background_color = background_color
+      Screen.init(@window, mode.width, mode.height)
+
       @exit = false
       @clock = SF::Clock.new
       @stage = StageEmpty.new(window)
+    end
+
+    def vsync
+      true
+    end
+
+    def joystick_threshold
+      1.0
+    end
+
+    def mouse_cursor_visible
+      true
+    end
+
+    def background_color
+      DefaultBackgroundColor
     end
 
     def run
@@ -52,7 +65,7 @@ module GSF
       case event
       when SF::Event::Resized
         # update the view to the new size of the window
-        window.view = SF::View.new(SF.float_rect(0, 0, event.width, event.height))
+        Screen.init(window, event.width, event.height)
       when SF::Event::Closed
         window.close
       end

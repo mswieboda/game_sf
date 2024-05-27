@@ -2,9 +2,6 @@ module GSF
   class Screen
     @@view : SF::View = SF::View.new
 
-    DefaultWidth = 1920_f32
-    DefaultHeight = 1080_f32
-
     def self.width
       @@view.size.x
     end
@@ -13,7 +10,8 @@ module GSF
       @@view.size.y
     end
 
-    def self.init(window : SF::RenderWindow, default_width = DefaultWidth, default_height = DefaultHeight)
+    def self.init(window : SF::RenderWindow, width, height)
+      window.view = SF::View.new(SF.float_rect(0, 0, width, height))
       @@view = window.view
     end
   end
