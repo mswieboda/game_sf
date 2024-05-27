@@ -15,8 +15,6 @@ module GSF
 
     def self.init(window : SF::RenderWindow, default_width = DefaultWidth, default_height = DefaultHeight)
       @@view = window.view
-
-      @@view.reset(SF.float_rect(0_f32, 0_f32, default_width, default_height))
     end
   end
 end
