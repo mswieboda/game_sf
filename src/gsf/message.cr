@@ -378,17 +378,23 @@ module GSF
     def get_lines(message : String)
       lines = [""]
       line_index = 0
-      text.string = " "
-      char_width = text.global_bounds.width.to_i
-      chars_per_line = (@width / char_width).to_i
+      words = message.split
+      text.string = ""
 
-      message.split.each do |word|
-        if lines[line_index].size + word.size > chars_per_line
+      words.each_with_index do |word, index|
+        text.string += word
+        text.string += " " unless index >= words.size - 1
+        message_width = text.global_bounds.width
+
+        if message_width >= @width
           line_index += 1
           lines << ""
+          text.string = word
+          text.string += " " unless index >= words.size - 1
         end
 
-        lines[line_index] += "#{word} "
+        lines[line_index] += word
+        lines[line_index] += " " unless index >= words.size - 1
       end
 
       lines
