@@ -1,7 +1,7 @@
 module GSF
   class StyledText < SF::Text
-    @sections : Array(StyledTextSection)
     @raw_text : String
+    @sections : Array(StyledTextSection)
 
     FontSize = 10
 
@@ -15,10 +15,26 @@ module GSF
 
       @sections = [] of StyledTextSection
 
-      parse_text
+      parse_text_sections
     end
 
-    def parse_text
+    def string=(string : String)
+      super(string)
+
+      parse_text_sections
+    end
+
+    def global_bounds
+      text_dup = self.dup
+      text_dup.string = @sections.map(&.text).join
+      text_dup.global_bounds
+    end
+
+    def to_pages(width : Number)
+
+    end
+
+    def parse_text_sections
       # NOTE: cannot be nested, use individual wrapped styles instead
       # options:
       # [s=b]: SF::TextStyle::Bold
@@ -98,9 +114,7 @@ module GSF
       end
 
       # put the remainder into a section, unless there are no sections
-      if @sections.any?
-        @sections << StyledTextSection.new(@raw_text[offset_index..-1], [SF::Text::Style::Regular], self.fill_color, self.outline_color)
-      end
+      @sections << StyledTextSection.new(@raw_text[offset_index..-1], [SF::Text::Style::Regular], self.fill_color, self.outline_color)
     end
 
     def self.get_styles(style_types : String) : Array(SF::Text::Style)
@@ -143,51 +157,30 @@ module GSF
     end
 
     def draw(target : SF::RenderTarget, states : SF::RenderStates)
-      if @sections.empty?
-        super(target, states)
-      else
-        orig_fill_color = self.fill_color
-        orig_outline_color = self.outline_color
-        orig_position = self.position
-        orig_string = self.string
-        # TODO: need to unpack self.style from UInt32 to Array(SF::Text::Style)
-        # orig_styles = self.class.get_styles(self.style)
-        orig_styles = [] of SF::Text::Style
+      text_dup = self.dup
 
-        @sections.each_with_index do |section, index|
-          # changing self via string, position, style, colors etc
-          self.string = section.text
-          self.fill_color = section.fill_color
-          self.outline_color = section.outline_color
-
-          total_style = SF::Text::Style::Regular
-
-          section.styles.each do |style|
-            total_style |= style
-          end
-
-          self.style = total_style
-
-          # draw
-          super(target, states)
-
-          # move position for next section
-          self.move(global_bounds.width, 0)
-        end
-
-        # put everything back
-        self.fill_color = orig_fill_color
-        self.outline_color = orig_outline_color
-        self.position = orig_position
-        self.string = orig_string
+      @sections.each_with_index do |section, index|
+        # changing text_dup via string, position, style, colors etc
+        text_dup.string = section.text
+        text_dup.fill_color = section.fill_color
+        text_dup.outline_color = section.outline_color
 
         total_style = SF::Text::Style::Regular
 
-        orig_styles.each do |style|
+        section.styles.each do |style|
           total_style |= style
         end
 
-        self.style = total_style
+        text_dup.style = total_style
+
+        # draw
+        text_dup.draw(target, states)
+
+        # move position for next section
+        text_dup.move(text_dup.global_bounds.width, 0)
+
+        # TODO: if there is a new line, move down char_height + line_spacing,
+        # and start at the self.position.x
       end
     end
   end
