@@ -8,7 +8,7 @@ module GSF
     # sample text that is formatted:
     # "hi this is a [s=ibu]test[/s], head to [s=b fc=#ff0000]Baron Cave[/s]
     # to find the [s=b]lost relic[/s] somewhere in
-    # the [s fc=#0000ff oc=#00ff00]3rd basement level[/s]."
+    # the [s= fc=#0000ff oc=#00ff00]3rd basement level[/s]."
 
     def initialize(@raw_text = "", font = SF::Font.new, font_size = FontSize)
       super(@raw_text, font, font_size)
@@ -19,58 +19,81 @@ module GSF
     end
 
     def parse_text
-      # find matching opening and closing tags [s][/s]
-      # cannot be nested, use individual wrapped styles instead
+      # NOTE: cannot be nested, use individual wrapped styles instead
       # options:
       # [s=b]: SF::TextStyle::Bold
       # [s=i]: SF::TextStyle::Italic
       # [s=u]: SF::TextStyle::Underlined
       # [s=s]: SF::TextStyle::StrikeThrough
-      # can be combined, in any order like
+      # styles can be combined, in any order:
       # [s=iub]: bold, italic underlined
-      # for colors there is fc, oc:
-      # [s fc=#ff00ffcc]: fill color, in hex #rrggbb or #rrggbbaa format
-      # [s oc=#0000ff]: outline color in hex #rrggbb or #rrggbbaa format
-      # can be combined with s, for style and colors:
-      # [s=bi fc=#ff00ff oc=#00ff00cc] in which case it should end in `[/s]`
+
+      # for colors there is fc, oc for fill/outline color
+      # but `[s=` is required however no style needs to be added:
+      # [s= fc=#ff00ffcc]: fill color, in hex #rgb or #rrggbb or #rrggbbaa format
+      # [s= oc=#0000ff]: outline color in hex #rgb or #rrggbb or #rrggbbaa format
+      # can be combined fully with s= styles, for styles and colors:
+      # [s=bi fc=#ff00ff oc=#00ff00cc]
 
       offset_index = 0
 
-      while style_start = @raw_text.index("[s", offset_index)
-        # NOTE: for now, only check for s=, ignoring "fc" and "oc" colors
-        if style_type_start = @raw_text.index(/\=[bius]/, style_start)
-          # skips the = sign
-          style_type_start += 1
+      while style_start = @raw_text.index("[s=", offset_index)
+        if style_end = @raw_text.index(']', style_start)
+          # skips ]
+          text_start = style_end + 1
 
-          if style_type_end = @raw_text.index(/[\]\W]/, style_type_start)
-            # skips either the space to attributes, or the ]
-            style_type_end -= 1
-            style_types = @raw_text[style_type_start..style_type_end]
+          # check for style closing
+          if text_end = @raw_text.index("[/s]", text_start)
+            style_types = ""
+            fill_color = self.fill_color
+            outline_color = self.outline_color
+            text = @raw_text[text_start...text_end]
 
-            if style_type_end = @raw_text.index(']', style_type_end)
-              text_start = style_type_end + 1
+            # check styles
+            if style_type_start = @raw_text[0..style_end].index(/\=[bius]+/, style_start)
+              # skips =
+              style_type_start += 1
 
-              if style_end = @raw_text.index("[/s]", text_start)
-                # NOTE: ignoring "fc" and "oc" colors for now
-                styles = self.class.get_styles(style_types)
-                text = @raw_text[text_start...style_end]
-
-                # TODO: for now make the unstyled text be Style::Regular, but should unpack self.style to styles array
-                @sections << StyledTextSection.new(@raw_text[offset_index...style_start], [SF::Text::Style::Regular], self.fill_color, self.outline_color)
-                @sections << StyledTextSection.new(text, styles, self.fill_color, self.outline_color)
-
-                offset_index = style_end + 4
-              else
-                offset_index += 1
+              if style_type_end = @raw_text[0..style_end].index(/[\]\W]/, style_type_start)
+                style_types = @raw_text[style_type_start...style_type_end]
               end
-            else
-              offset_index += 1
             end
+
+            styles = self.class.get_styles(style_types)
+
+            # check colors
+            color_style_start = style_start
+
+            while color_attribute_start = @raw_text[0..style_end].index(/[fo]c\=#/, color_style_start)
+              # skips the [fo]c=#
+              color_hex_start = color_attribute_start + 4
+
+              if color_hex_end = @raw_text.index(/[\W\]]/, color_hex_start)
+                color_hex = @raw_text[color_hex_start...color_hex_end]
+
+                if @raw_text[color_attribute_start] == 'f'
+                  fill_color = self.class.hex_to_color(color_hex)
+                elsif @raw_text[color_attribute_start] == 'o'
+                  outline_color = self.class.hex_to_color(color_hex)
+                end
+
+                color_style_start = color_hex_end
+              else
+                break
+              end
+            end
+
+            # TODO: for now make the unstyled text be Style::Regular, but should unpack self.style to styles array
+            @sections << StyledTextSection.new(@raw_text[offset_index...style_start], [SF::Text::Style::Regular], self.fill_color, self.outline_color)
+            @sections << StyledTextSection.new(text, styles, fill_color, outline_color)
+
+            # skips the [/s]
+            offset_index = text_end + 4
           else
-            offset_index += 1
+            break
           end
         else
-          offset_index += 1
+          break
         end
       end
 
@@ -98,6 +121,25 @@ module GSF
           SF::Text::Style::Regular
         end
       end
+    end
+
+    def self.hex_to_color(color_hex : String) : SF::Color
+      if color_hex.starts_with?('#')
+        color_hex = color_hex[1..-1]
+      end
+
+      if color_hex.size == 3
+        color_hex = color_hex.chars.map do |char|
+          "#{char}#{char}"
+        end.join
+      end
+
+      r = color_hex[0..1].to_i(16)
+      g = color_hex[2..3].to_i(16)
+      b = color_hex[4..5].to_i(16)
+      a = color_hex.size < 8 ? 255 : color_hex[6..7].to_i(16)
+
+      SF::Color.new(r, g, b, a)
     end
 
     def draw(target : SF::RenderTarget, states : SF::RenderStates)
