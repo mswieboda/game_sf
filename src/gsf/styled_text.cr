@@ -30,8 +30,33 @@ module GSF
       text_dup.global_bounds
     end
 
-    def to_pages(width : Number)
+    def to_words_and_spaces : Array(SF::Text)
+      @sections.flat_map do |section|
+        section_text = section.to_text(self)
+        space_text = section_text.dup
+        space_text.string = " "
 
+        words = section.text.split.map do |word|
+          text = section_text.dup
+          text.string = word
+          text
+        end
+
+        starts_with_space = section.text.starts_with?(" ")
+        ends_with_space = section.text.ends_with?(" ")
+
+        words_with_spaces = [] of SF::Text
+
+        words_with_spaces << space_text if starts_with_space
+
+        words_with_spaces += words.map_with_index do |word, index|
+          index < words.size - 1 ? [word, space_text] : [word]
+        end.flatten
+
+        words_with_spaces << space_text if ends_with_space
+
+        words_with_spaces
+      end
     end
 
     def parse_text_sections
@@ -115,6 +140,29 @@ module GSF
 
       # put the remainder into a section, unless there are no sections
       @sections << StyledTextSection.new(@raw_text[offset_index..-1], [SF::Text::Style::Regular], self.fill_color, self.outline_color)
+
+      # now loop through the sections, and if there are newlines, split them into new sections
+      # starting with the newline
+      temp_sections = @sections.dup
+
+      insert_index = 0
+      inserts = 0
+
+      temp_sections.each_with_index do |section, section_index|
+        if section.text.includes?("\n")
+          insert_index += section_index
+          split_sections = section.text.split("\n")
+          section.text = split_sections[0]
+
+          split_sections[1..-1].each_with_index do |split, split_section_index|
+            inserts += 1
+            split_section = section.dup
+            split_section.text = "\n#{split}"
+
+            @sections.insert(insert_index + inserts + split_section_index, split_section)
+          end
+        end
+      end
     end
 
     def self.get_styles(style_types : String) : Array(SF::Text::Style)
@@ -158,10 +206,26 @@ module GSF
 
     def draw(target : SF::RenderTarget, states : SF::RenderStates)
       text_dup = self.dup
+      x_position = text_dup.position.x
 
       @sections.each_with_index do |section, index|
+        text = section.text
+
+        if text.starts_with?("\n")
+          text_dup.string = "M"
+          char_height = text_dup.global_bounds.height
+
+          text_dup.position = {
+            x_position,
+            text_dup.position.y + char_height + text_dup.line_spacing
+          }
+
+          # chops off the newline
+          text = section.text[1..-1]
+        end
+
         # changing text_dup via string, position, style, colors etc
-        text_dup.string = section.text
+        text_dup.string = text
         text_dup.fill_color = section.fill_color
         text_dup.outline_color = section.outline_color
 
@@ -178,20 +242,40 @@ module GSF
 
         # move position for next section
         text_dup.move(text_dup.global_bounds.width, 0)
-
-        # TODO: if there is a new line, move down char_height + line_spacing,
-        # and start at the self.position.x
       end
     end
   end
 
   class StyledTextSection
-    getter text : String
+    property text : String
     getter styles : Array(SF::Text::Style)
     getter fill_color : SF::Color
     getter outline_color : SF::Color
 
     def initialize(@text, @styles, @fill_color, @outline_color)
+    end
+
+    def dup
+      self.class.new(@text, @styles, @fill_color, @outline_color)
+    end
+
+    def to_text(base_text : SF::Text)
+      sf_text = base_text.dup
+
+      # changing text_dup via string, position, style, colors etc
+      sf_text.string = text
+      sf_text.fill_color = fill_color
+      sf_text.outline_color = outline_color
+
+      total_style = SF::Text::Style::Regular
+
+      styles.each do |style|
+        total_style |= style
+      end
+
+      sf_text.style = total_style
+
+      sf_text
     end
   end
 end

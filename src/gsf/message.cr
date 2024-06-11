@@ -1,32 +1,34 @@
+require "./styled_text"
+
 module GSF
   class Message
     alias ChoiceData = NamedTuple(key: String, label: String)
 
     @height : Float32 | Int32
-    @char_height : Float32 | Int32
     @typing_timer : Timer
     @animate_timer : Timer
 
     getter cx : Float32 | Int32
     getter y : Float32 | Int32
-    getter message : String
-    getter text : SF::Text
+    getter text : StyledText
+    getter choice_text : SF::Text
     getter width : Float32 | Int32
     getter? typing
     getter? animate
     getter? show
     getter? hide
-    getter pages : Array(Array(String))
+    getter pages : Array(Array(Array(SF::Text)))
     getter page_index
     getter sound : SF::Sound
     getter choices : Array(ChoiceData)
     getter choice_index
     getter choice_selected : ChoiceData?
+    getter line_height : Float32 | Int32
 
     Padding = 24
     FontSize = 16
     MaxLines = 4
-    LineSpacing = 2
+    LineSpacing = 16
     TypeDuration = 69.milliseconds
     AnimateDuration = 300.milliseconds
     AnimateArrowDuration = 500.milliseconds
@@ -42,24 +44,26 @@ module GSF
       @y = -1,
       bot_y = -1,
       @width = Screen.width,
-      @message = "",
+      message = "",
       @typing = false,
       @animate = false,
       @choices = [] of ChoiceData
     )
-      @text = SF::Text.new("", font, font_size)
-      @pages = [] of Array(String)
+      @text = StyledText.new(message, font, font_size)
+      @pages = [] of Array(Array(SF::Text))
       @page_index = 0
       @text.line_spacing = line_spacing
       @text.fill_color = text_color
 
-      @text.string = "M"
-      @char_height = @text.global_bounds.height
-      @height = ((font_size + line_spacing) * (max_lines + 2) - line_spacing).to_f32
+      @choice_text = SF::Text.new("M", font, font_size)
 
-      @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
-      @text.string = typing? ? "" : @message
+      @height = ((font_size + line_spacing) * max_lines - line_spacing).to_f32
 
+      text_dup = text.dup
+      text_dup.string = "M"
+      @line_height = text_dup.global_bounds.height + line_spacing
+
+      @typing_timer = Timer.new(type_duration)
       @animate_timer = Timer.new(animate_duration)
       @animate_arrow_timer = Timer.new(animate_arrow_duration)
 
@@ -74,7 +78,7 @@ module GSF
       @choice_index = 0
       @choice_selected = nil
 
-      @pages = get_pages(message)
+      @pages = get_pages
 
       reset_message
     end
@@ -220,10 +224,9 @@ module GSF
       1
     end
 
-    def get_pages(message : String)
-      text.string = message
-      text_width = text.global_bounds.width
-      lines = width < text_width ? get_lines(message) : [message]
+    def get_pages
+      all_text = text.to_words_and_spaces
+      lines = get_lines(all_text)
       lines.in_slices_of(max_lines)
     end
 
@@ -302,7 +305,8 @@ module GSF
     end
 
     def update_data(message : String, choices = [] of ChoiceData)
-      @pages = get_pages(message)
+      @text = StyledText.new(message, font, font_size)
+      @pages = get_pages
       @page_index = 0
       @choices = choices
 
@@ -310,10 +314,13 @@ module GSF
       reset_choice_selected
     end
 
+    def typed_message
+      pages[page_index].flat_map { |lines| lines.map(&.string).join }.join("\n")
+    end
+
     def reset_message
-      @message = pages[page_index].join("\n")
-      @typing_timer = Timer.new(@message.empty? ? type_duration : type_duration * @message.size)
-      @text.string = typing? ? "" : @message
+      message = typed_message
+      @typing_timer = Timer.new(message.empty? ? type_duration : type_duration * message.size)
     end
 
     def next_page_or_hide
@@ -375,26 +382,21 @@ module GSF
       end
     end
 
-    def get_lines(message : String)
-      lines = [""]
+    def get_lines(all_text : Array(SF::Text)) : Array(Array(SF::Text))
+      lines = [[] of SF::Text]
       line_index = 0
-      words = message.split
-      text.string = ""
+      line_width = 0
 
-      words.each_with_index do |word, index|
-        text.string += word
-        text.string += " " unless index >= words.size - 1
-        message_width = text.global_bounds.width
+      all_text.each_with_index do |text, index|
+        line_width += text.global_bounds.width
 
-        if message_width >= @width
+        if line_width >= @width
+          lines << [text]
+          line_width = text.global_bounds.width
           line_index += 1
-          lines << ""
-          text.string = word
-          text.string += " " unless index >= words.size - 1
+        else
+          lines[line_index] << text
         end
-
-        lines[line_index] += word
-        lines[line_index] += " " unless index >= words.size - 1
       end
 
       lines
@@ -419,14 +421,41 @@ module GSF
     end
 
     def draw_text(window)
+      max_index = 0
+
       if typing?
-        index = (@message.size * [@typing_timer.percent, 1].min).to_i
-        text.string = @message[0..index]
+        message = typed_message
+        max_index = (typed_message.size * [@typing_timer.percent, 1].min).to_i
       end
 
-      @text.position = {x + padding, y + padding}
+      lines = pages[page_index]
+      line_x = x + padding
+      word_x = line_x
+      word_y = y + padding
+      index = 0
 
-      window.draw(text)
+      lines.each_with_index do |words, line_index|
+        words.each do |word|
+          word.position = {word_x, word_y}
+
+          if typing? && index + word.string.size > max_index
+            partial_word = word.dup
+            partial_word.string = word.string[0..(max_index - index)]
+
+            window.draw(partial_word)
+
+            return
+          else
+            window.draw(word)
+
+            index += word.string.size
+            word_x += word.global_bounds.width
+          end
+        end
+
+        word_y += line_height
+        word_x = line_x
+      end
     end
 
     def draw_border(window)
@@ -444,22 +473,22 @@ module GSF
       return if choices.empty?
 
       choices.each_with_index do |choice, index|
-        text.string = choice[:label]
+        @choice_text.string = choice[:label]
         px = x + width + padding * 2 + outline_thickness * 2 + choice_padding
-        py = y + (@char_height + choice_padding * 3 + outline_thickness * 2) * index
-        text_width = text.global_bounds.width
+        py = y + (choice_text.global_bounds.height + choice_padding * 3 + outline_thickness * 2) * index
+        text_width = choice_text.global_bounds.width
 
         draw_choice_border(window, px, py, text_width, index == @choice_index)
 
-        text.position = {px + choice_padding, py + choice_padding}
+        choice_text.position = {px + choice_padding, py + choice_padding}
 
-        window.draw(text)
+        window.draw(choice_text)
       end
     end
 
     def draw_choice_border(window, px, py, text_width, selected)
       rect = SF::RectangleShape.new
-      rect.size = SF.vector2f(text_width + choice_padding * 2, @char_height + choice_padding * 2)
+      rect.size = SF.vector2f(text_width + choice_padding * 2, choice_text.global_bounds.height + choice_padding * 2)
       rect.fill_color = background_color
       rect.outline_color = selected ? outline_color : background_color
       rect.outline_thickness = outline_thickness
@@ -497,11 +526,6 @@ module GSF
     BottomPadding = Message::Padding * 3
 
     def initialize(message = "", typing = true, animate = true, choices = [] of ChoiceData)
-      test_text = SF::Text.new(" ", font, font_size)
-      test_text.line_spacing = line_spacing
-
-      height = test_text.global_bounds.height * max_lines
-
       super(
         cx: (Screen.width / 2).to_i,
         bot_y: bottom_padding,
