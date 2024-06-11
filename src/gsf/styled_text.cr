@@ -115,6 +115,28 @@ module GSF
 
       # put the remainder into a section, unless there are no sections
       @sections << StyledTextSection.new(@raw_text[offset_index..-1], [SF::Text::Style::Regular], self.fill_color, self.outline_color)
+
+      # now loop through the sections, and if there are newlines, split them into new sections
+      # starting with the newline
+      temp_sections = @sections.dup
+
+      insert_index = 0
+
+      temp_sections.each_with_index do |section, index|
+        if section.includes?("\n")
+          insert_index += index
+          split_sections = section.text.split("\n")
+          section.text = split_sections[0]
+
+          # TODO:
+          # add (split_sections.size - 1) more sections, with same section properties
+          # to the @sections array, at insert_index + split_section_index
+          split_sections[1..-1].each_with_index do |split, index|
+            # TODO: make dup method on StyledTextSection
+            # split_section = section.dup
+          end
+        end
+      end
     end
 
     def self.get_styles(style_types : String) : Array(SF::Text::Style)
@@ -158,8 +180,19 @@ module GSF
 
     def draw(target : SF::RenderTarget, states : SF::RenderStates)
       text_dup = self.dup
+      x_position = text_dup.position.x
 
       @sections.each_with_index do |section, index|
+        if section.text.starts_with?("\n")
+          text_dup.string = "M"
+          char_height = text_dup.global_bounds.height
+
+          text_dup.position = {x_position, text_dup.position.y + char_height + text_dup.line_spacing}
+
+          # chops off the newline
+          section.text = section.text[1..-1]
+        end
+
         # changing text_dup via string, position, style, colors etc
         text_dup.string = section.text
         text_dup.fill_color = section.fill_color
@@ -178,15 +211,12 @@ module GSF
 
         # move position for next section
         text_dup.move(text_dup.global_bounds.width, 0)
-
-        # TODO: if there is a new line, move down char_height + line_spacing,
-        # and start at the self.position.x
       end
     end
   end
 
   class StyledTextSection
-    getter text : String
+    property text : String
     getter styles : Array(SF::Text::Style)
     getter fill_color : SF::Color
     getter outline_color : SF::Color
