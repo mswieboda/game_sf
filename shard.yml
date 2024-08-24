@@ -4,7 +4,7 @@ version: 0.29.1
 authors:
   - Matt Swieboda <mswieboda@users.noreply.github.com>
 
-crystal: '>= 1.12.1'
+crystal: '>= 1.13.2'
 
 license: MIT
 
