@@ -391,8 +391,14 @@ module GSF
         line_width += text.global_bounds.width
 
         if line_width >= @width
-          lines << [text]
-          line_width = text.global_bounds.width
+          if text.string == " "
+            lines << [] of SF::Text
+            line_width = 0
+          else
+            lines << [text]
+            line_width = text.global_bounds.width
+          end
+
           line_index += 1
         else
           lines[line_index] << text
