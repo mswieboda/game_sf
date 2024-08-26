@@ -1,14 +1,12 @@
 module GSF
   abstract class Stage
-    getter window : SF::RenderWindow
     getter keys
     getter mouse
     getter joysticks
     getter scene : Scene
     getter? exit
 
-    def initialize(window : SF::RenderWindow)
-      @window = window
+    def initialize
       @keys = Keys.new
       @mouse = Mouse.new
       @joysticks = Joysticks.new
@@ -16,15 +14,17 @@ module GSF
       @exit = false
     end
 
-    # check when to switch scenes using `switch(nextScene : Scene)`
+    # check when to switch scenes using `switch(scene : Scene)`
     abstract def check_scenes
 
-    def switch(nextScene : Scene)
-      scene.reset
+    def switch(scene : Scene)
+      @scene.reset
 
-      @scene = nextScene
+      Screen.reset_view
 
-      scene.init
+      @scene = scene
+
+      @scene.init
     end
 
     # called from GSF::Game, used to set things like keys, mouse, etc from events

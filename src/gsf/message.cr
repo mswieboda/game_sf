@@ -7,9 +7,9 @@ module GSF
     @height : Float32 | Int32
     @typing_timer : Timer
     @animate_timer : Timer
+    @cx : Float32 | Int32
+    @y : Float32 | Int32
 
-    getter cx : Float32 | Int32
-    getter y : Float32 | Int32
     getter text : StyledText
     getter choice_text : SF::Text
     getter width : Float32 | Int32
@@ -355,7 +355,11 @@ module GSF
     end
 
     def x
-      cx - width / 2
+      Screen.x + @cx - width / 2
+    end
+
+    def y
+      Screen.y + @y
     end
 
     def width

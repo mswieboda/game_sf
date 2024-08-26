@@ -23,7 +23,7 @@ module GSF
 
       @exit = false
       @clock = SF::Clock.new
-      @stage = StageEmpty.new(window)
+      @stage = StageEmpty.new
     end
 
     def vsync
