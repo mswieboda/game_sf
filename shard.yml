@@ -11,4 +11,4 @@ license: MIT
 dependencies:
   crsfml:
     github: oprypin/crsfml
-    version: ~> 2.5.3
+    version: 2.5.1
