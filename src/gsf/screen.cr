@@ -1,13 +1,13 @@
 module GSF
   class Screen
-    @@window : SF::RenderWindow = SF::RenderWindow.new(SF::VideoMode.desktop_mode, "")
+    @@window : SF::RenderWindow?
 
-    def self.window
-      @@window
+    def self.window : SF::RenderWindow
+      @@window.as(SF::RenderWindow)
     end
 
     def self.view
-      @@window.view
+      window.view
     end
 
     def self.view_top_left
