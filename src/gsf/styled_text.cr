@@ -24,28 +24,8 @@ module GSF
       parse_text_sections
     end
 
-    def dup_text : SF::Text
-      text = SF::Text.new
-      text.character_size = self.character_size
-      text.color = self.color
-      text.fill_color = self.fill_color
-      if font = self.font
-        text.font = font
-      end
-      text.letter_spacing = self.letter_spacing
-      text.line_spacing = self.line_spacing
-      text.outline_color = self.outline_color
-      text.outline_thickness = self.outline_thickness
-      # TODO: don't know how to convert UInt32 to SF::Text::Style
-      # if style = self.style
-      #   text.style = style
-      # end
-      # text.style = (self.style).as(SF::Text::Style)
-      text
-    end
-
     def global_bounds
-      text_dup = dup_text
+      text_dup = self.dup
       text_dup.string = @sections.map(&.text).join
       text_dup.global_bounds
     end
@@ -225,7 +205,7 @@ module GSF
     end
 
     def draw(target : SF::RenderTarget, states : SF::RenderStates)
-      text_dup = dup_text
+      text_dup = self.dup
       x_position = text_dup.position.x
 
       @sections.each_with_index do |section, index|
