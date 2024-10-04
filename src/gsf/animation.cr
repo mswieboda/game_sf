@@ -1,25 +1,37 @@
 module GSF
   class Animation
-    getter width
-    getter height
-    getter frame
-    getter fps_factor
+    getter frame : Int32
     getter? loops
-    getter sprites
     getter? paused
 
-    def initialize(fps_factor = 60, loops = true)
-      @width = 0
-      @height = 0
-      @frame = 0
-      @sprites = [] of SF::Sprite
+    @sprites : Array(SF::Sprite)
+    @frame_durations_ms : Array(Int32) # in milliseconds
+    @frame_time_ms : Int32 # in milliseconds
 
-      @fps_factor = fps_factor
+    def initialize(loops = true)
+      @sprites = [] of SF::Sprite
+      @frame_durations_ms = [] of Int32
+      @frame = 0
+      @frame_time_ms = 0
       @loops = loops
       @paused = false
     end
 
-    def add(filename : String, x, y, width, height, color : SF::Color? = nil, rotation = 0, flip_horizontal = false, flip_vertical = false, smooth = false, repeated = false)
+    def add(
+      filename : String,
+      x : Int32,
+      y : Int32,
+      width : Int32,
+      height : Int32,
+      duration_ms : Int32 = 125,
+      color : SF::Color? = nil,
+      rotation = 0,
+      flip_horizontal = false,
+      flip_vertical = false,
+      smooth = false,
+      repeated = false,
+      scale = {1, 1}
+    )
       texture = SF::Texture.from_file(filename, SF::IntRect.new(x, y, width, height))
       texture.smooth = smooth
       texture.repeated = repeated
@@ -28,53 +40,78 @@ module GSF
       sprite.origin = texture.size / 2.0
       sprite.color = color ? color : SF::Color::White
       sprite.rotation = rotation if rotation != 0
+      sprite.scale = scale
 
       if flip_horizontal || flip_vertical
         sh = flip_horizontal ? -1 : 1
         sv = flip_vertical ? -1 : 1
 
-        sprite.scale = {sh, sv}
+        sprite.scale({sh, sv})
       end
 
-      # sprite.scale(Screen.scaling_factor, Screen.scaling_factor)
-
-      sprites << sprite
-
-      @height = height if height > @height
-      @width = width if width > width
+      @sprites << sprite
+      @frame_durations_ms << duration_ms
     end
 
     def restart
       @paused = false
+      @frame_time_ms = 0
       @frame = 0
     end
 
     def done?
-      frame >= total_frames
+      frame >= @sprites.size - 1 && frame_done?
+    end
+
+    def frame_done?
+      @frame_time_ms >= @frame_durations_ms[frame]
     end
 
     def pause
       @paused = true
     end
 
-    def display_frame
-      (frame / fps_factor).to_i
+    def next_frame_info : Tuple(Int32, Int32)
+      frame_time_remainder_ms = @frame_time_ms
+      frame_index = @frame
+
+      while frame_time_remainder_ms >= @frame_durations_ms[frame_index]
+        frame_time_remainder_ms -= @frame_durations_ms[frame_index]
+
+        # puts ">>> next_frame_info: frame_time_remainder_ms: #{frame_time_remainder_ms}"
+
+        if frame_index + 1 < @frame_durations_ms.size
+          frame_index += 1
+          # puts ">>> next_frame_info: next frame: #{frame_index}"
+        elsif loops?
+          frame_time_remainder_ms -= @frame_durations_ms[frame_index]
+          frame_index = 0
+          # puts ">>> next_frame_info: next frame: #{frame_index}"
+        end
+      end
+
+      # puts ">>> next_frame_info: #{{frame_time_remainder_ms, frame_index}}"
+
+      {frame_time_remainder_ms, frame_index}
     end
 
-    def total_frames
-      (sprites.size * fps_factor).to_i - 1
-    end
-
-    def update(_frame_time)
+    def update(frame_time : Float32)
       return if paused?
 
-      restart if loops? && done?
+      # frame_time is in seconds, @frame_time_ms is in milliseconds
+      @frame_time_ms += (frame_time * 1000).round.to_i unless done?
 
-      @frame += 1 if frame < total_frames
+      # puts ">>> update @frame_time_ms: #{@frame_time_ms} @frame: #{@frame}"
+
+      if frame_done?
+        remainder, frame = next_frame_info
+        @frame_time_ms = remainder
+        @frame = frame
+      end
     end
 
     def draw(window, x, y, flip_horizontal = false, flip_vertical = false, color : SF::Color? = nil, rotation = 0)
-      if sprite = sprites[display_frame]
+      if sprite = @sprites[frame]
         sprite.position = {x, y}
         sprite.color = color if color
         sprite.rotation = rotation
@@ -84,12 +121,12 @@ module GSF
 
         window.draw(sprite)
       else
-        raise "> #{self.class.name}#draw !sprite"
+        raise "> #{self.class.name}#draw !@sprites[frame]"
       end
     end
 
     def global_bounds
-      if sprite = sprites[display_frame]
+      if sprite = sprites[frame]
         sprite.global_bounds
       else
         SF::FloatRect.new
