@@ -117,7 +117,7 @@ module GSF
         sprite.rotation = rotation
         sh = flip_horizontal ? -1 : 1
         sv = flip_vertical ? -1 : 1
-        sprite.scale = {sh, sv}
+        sprite.scale({sh, sv})
 
         window.draw(sprite)
       else
