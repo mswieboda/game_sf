@@ -115,8 +115,8 @@ module GSF
         sprite.position = {x, y}
         sprite.color = color if color
         sprite.rotation = rotation
-        sh = flip_horizontal ? -1 : 1
-        sv = flip_vertical ? -1 : 1
+        sh = flip_horizontal && sprite.scale.x > 0 ? -1 : 1
+        sv = flip_vertical && sprite.scale.y > 0 ? -1 : 1
         sprite.scale({sh, sv})
 
         window.draw(sprite)
