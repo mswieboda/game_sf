@@ -24,11 +24,11 @@ module GSF
       @text = SF::Text.new(label, font, size)
 
       if centered
-        x -= @text.global_bounds.width / 2
-        y -= @text.global_bounds.height / 2
+        @x -= @text.global_bounds.width / 2
+        @y -= @text.global_bounds.height / 2
       end
 
-      @text.position = {x, y}
+      @text.position = {@x, @y}
 
       if focused?
         focus
@@ -42,11 +42,11 @@ module GSF
 
     def draw(window : SF::RenderWindow, x_offset = 0, y_offset = 0)
       unless x_offset.zero?
-        @text.position = {x + x_offset, @text.position.y}
+        @text.position = {@x + x_offset, @text.position.y}
       end
 
       unless y_offset.zero?
-        @text.position = {@text.position.x, y + y_offset}
+        @text.position = {@text.position.x, @y + y_offset}
       end
 
       window.draw(text)
