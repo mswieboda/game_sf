@@ -53,6 +53,10 @@ module GSF
       @frame_durations_ms << duration_ms
     end
 
+    def play
+      @paused = false
+    end
+
     def restart
       @paused = false
       @frame_time_ms = 0
@@ -78,30 +82,22 @@ module GSF
       while frame_time_remainder_ms >= @frame_durations_ms[frame_index]
         frame_time_remainder_ms -= @frame_durations_ms[frame_index]
 
-        # puts ">>> next_frame_info: frame_time_remainder_ms: #{frame_time_remainder_ms}"
-
         if frame_index + 1 < @frame_durations_ms.size
           frame_index += 1
-          # puts ">>> next_frame_info: next frame: #{frame_index}"
         elsif loops?
           frame_time_remainder_ms -= @frame_durations_ms[frame_index]
           frame_index = 0
-          # puts ">>> next_frame_info: next frame: #{frame_index}"
         end
       end
-
-      # puts ">>> next_frame_info: #{{frame_time_remainder_ms, frame_index}}"
 
       {frame_time_remainder_ms, frame_index}
     end
 
     def update(frame_time : Float32)
-      return if paused?
-
       # frame_time is in seconds, @frame_time_ms is in milliseconds
       @frame_time_ms += (frame_time * 1000).round.to_i unless done?
 
-      # puts ">>> update @frame_time_ms: #{@frame_time_ms} @frame: #{@frame}"
+      return if paused?
 
       if frame_done?
         remainder, frame = next_frame_info

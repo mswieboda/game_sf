@@ -7,9 +7,9 @@ module GSF
     @data : Hash(Symbol, AnimationData)
 
     delegate play, to: animation
+    delegate pause, to: animation
     delegate done?, to: animation
     delegate global_bounds, to: animation
-    delegate display_frame, to: animation
 
     def initialize(name, animation : Animation, flip_horizontal = false, flip_vertical = false)
       @data = Hash(Symbol, AnimationData).new
@@ -45,16 +45,13 @@ module GSF
     def play(name : Symbol)
       @name = name
 
+      animation.play
       animation.restart if animation.done?
     end
 
     # NOTE: is not working when looping is enabled, needs a fix for that
     def pause_after_done
       animation.pause if animation.done?
-    end
-
-    def pause
-      animation.pause
     end
 
     def animation_data
