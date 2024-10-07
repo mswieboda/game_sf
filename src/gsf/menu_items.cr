@@ -74,6 +74,14 @@ module GSF
       Mouse::Left
     end
 
+    def selected?(keys, joysticks)
+      return false unless focused_item
+      return true if keyboard? && keys.just_pressed?(keys_select)
+      return true if joysticks? && joysticks.just_pressed?(joysticks_select)
+
+      false
+    end
+
     def selected?(keys, mouse, joysticks)
       return false unless focused_item
       return true if keyboard? && keys.just_pressed?(keys_select)
@@ -151,8 +159,8 @@ module GSF
       end
     end
 
-    def draw(window : SF::RenderWindow)
-      menu_items.each(&.draw(window))
+    def draw(window : SF::RenderWindow, x_offset = 0, y_offset = 0)
+      menu_items.each(&.draw(window, x_offset, y_offset))
     end
   end
 end
