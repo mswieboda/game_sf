@@ -11,9 +11,12 @@ module GSF
     delegate done?, to: animation
     delegate global_bounds, to: animation
 
-    def initialize(name, animation : Animation, flip_horizontal = false, flip_vertical = false)
+    def initialize(@name : Symbol)
       @data = Hash(Symbol, AnimationData).new
-      @name = name
+    end
+
+    def initialize(@name : Symbol, animation : Animation, flip_horizontal = false, flip_vertical = false)
+      @data = Hash(Symbol, AnimationData).new
 
       add(name, animation, flip_horizontal, flip_vertical)
     end

@@ -19,10 +19,10 @@ module GSF
 
     def add(
       filename : String,
-      x : Int32,
-      y : Int32,
-      width : Int32,
-      height : Int32,
+      x : Int32 = 0,
+      y : Int32 = 0,
+      width : Int32 = 1,
+      height : Int32 = 1,
       duration_ms : Int32 = 125,
       color : SF::Color? = nil,
       rotation = 0,
