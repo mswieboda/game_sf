@@ -109,11 +109,18 @@ module GSF
       end
     end
 
+    def update(frame_time, keys : Keys, joysticks : Joysticks)
+      menu_items.each(&.update(frame_time))
+
+      keyboard_update(keys) if keyboard?
+      joysticks_update(joysticks) if joysticks?
+    end
+
     def update(frame_time, keys : Keys, mouse : Mouse, joysticks : Joysticks)
       menu_items.each(&.update(frame_time))
 
       keyboard_update(keys) if keyboard?
-      joysticks_update(joysticks) if keyboard?
+      joysticks_update(joysticks) if joysticks?
       mouse_update(mouse) if mouse?
     end
 
