@@ -48,6 +48,15 @@ module GSF
       animation.restart if animation.done?
     end
 
+    # NOTE: is not working when looping is enabled, needs a fix for that
+    def pause_after_done
+      animation.pause if animation.done?
+    end
+
+    def pause
+      animation.pause
+    end
+
     def animation_data
       @data[name]
     end
