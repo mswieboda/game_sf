@@ -1,3 +1,3 @@
 module GSF
-  VERSION = "0.33.9"
+  VERSION = "0.34.0"
 end
