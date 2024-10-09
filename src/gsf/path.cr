@@ -22,8 +22,7 @@ module GSF
       final_score[start] =  distance_score(start, target)
 
       while !open_set.empty?
-        # NOTE: this also works with target_score, but maybe final_score is the
-        #       most efficient path?
+        # NOTE: also works checking target_score, but maybe final_score is most efficient path?
         current = open_set.min_by { |point| final_score[point] }
 
         break if current == target
@@ -32,27 +31,29 @@ module GSF
 
         [-1, 0, 1].each do |d_row|
           [-1, 0, 1].each do |d_col|
-            next if d_row == 0 && d_col == 0
+            next if d_row.zero? && d_col.zero?
 
             neighbor = {row: current[:row] + d_row, col: current[:col] + d_col}
 
-            within_rows = 0 <= neighbor[:row] && neighbor[:row] < tiles.size
-            within_cols = 0 <= neighbor[:col] && neighbor[:col] < tiles.first.size
+            next if neighbor[:row] < 0 || neighbor[:row] >= tiles.size
+            next if neighbor[:col] < 0 || neighbor[:col] >= tiles.first.size
+            next if collides?(tiles, row: neighbor[:row], col: neighbor[:col])
 
-            next unless within_rows && within_cols
+            if !d_row.zero? && !d_col.zero?
+              # checks corners for collisions
+              next if collides?(tiles, row: current[:row] + d_row, col: current[:col])
+              next if collides?(tiles, row: current[:row], col: current[:col] + d_col)
+            end
 
             tentative_target_score = target_score[current] + 1
-            collides = collides?(tiles, row: neighbor[:row], col: neighbor[:col])
 
-            if !collides && (!came_from.has_key?(neighbor) || tentative_target_score < target_score[neighbor])
-              came_from[neighbor] = current
-              target_score[neighbor] = tentative_target_score
+            next if came_from.has_key?(neighbor) && tentative_target_score >= target_score[neighbor]
 
-              # TODO: this isn't used anywhere ???
-              final_score[neighbor] = tentative_target_score + distance_score(neighbor, target)
+            came_from[neighbor] = current
+            target_score[neighbor] = tentative_target_score
+            final_score[neighbor] = tentative_target_score + distance_score(neighbor, target)
 
-              open_set << neighbor
-            end
+            open_set << neighbor
           end
         end
       end
