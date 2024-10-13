@@ -5,12 +5,8 @@ module GSF
     property width : Int32
     property height : Int32
 
-    def initialize(size = 1)
-      @width = size
-      @height = size
-    end
-
-    def initialize(@width = 1, @height = 1)
+    # if only one arg is used, width is used for both width and height, like a square size
+    def initialize(@width = 1, @height = width)
     end
 
     # with other Box
@@ -54,7 +50,7 @@ module GSF
       MathHelpers.distance(test_x, test_y, cx, cy) <= radius
     end
 
-    # with circle (cx, cy, radius)
+    # with circle (radius, cx, cy)
     def collides?(x, y, circle : Circle, cx, cy)
       collides?(x, y, circle.radius, cx, cy)
     end
