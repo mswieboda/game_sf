@@ -37,7 +37,7 @@ module GSF
       end
     end
 
-    def update(frame_time)
+    def update(frame_time : Float32)
     end
 
     def draw(window : SF::RenderWindow, x_offset = 0, y_offset = 0)

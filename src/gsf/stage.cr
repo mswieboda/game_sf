@@ -53,7 +53,7 @@ module GSF
       end
     end
 
-    def update(frame_time)
+    def update(frame_time : Float32)
       check_scenes
       scene.update(frame_time, keys, mouse, joysticks)
       keys.reset

@@ -4,7 +4,7 @@ module GSF
       super(:empty)
     end
 
-    def update(frame_time, keys : Keys, mouse : Mouse, joysticks : Joysticks)
+    def update(frame_time : Float32, keys : Keys, mouse : Mouse, joysticks : Joysticks)
     end
 
     def draw(window : SF::RenderWindow)

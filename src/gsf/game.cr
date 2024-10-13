@@ -74,7 +74,7 @@ module GSF
       stage.event(event)
     end
 
-    def update(frame_time)
+    def update(frame_time : Float32)
       stage.update(frame_time)
 
       @exit = true if stage.exit?

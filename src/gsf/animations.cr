@@ -29,7 +29,7 @@ module GSF
       }
     end
 
-    def update(frame_time)
+    def update(frame_time : Float32)
       animation.update(frame_time)
     end
 

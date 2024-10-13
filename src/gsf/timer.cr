@@ -5,7 +5,7 @@ module GSF
     @start_time : Time | Nil
     @paused_duration : Time::Span | Nil
 
-    def initialize(duration, initialize_as_done = false)
+    def initialize(duration = Time::Span.new, initialize_as_done = false)
       @duration = duration
       @start_time = nil
       @paused_duration = nil

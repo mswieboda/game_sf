@@ -109,7 +109,7 @@ module GSF
       end
     end
 
-    def update(frame_time, keys : Keys, joysticks : Joysticks)
+    def update(frame_time : Float32, keys : Keys, joysticks : Joysticks)
       menu_items.each(&.update(frame_time))
 
       keyboard_update(keys) if keyboard?
