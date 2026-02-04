@@ -6,6 +6,12 @@ Wrapper / helpers for making a game with SFML using [`crsfml`](https://github.co
 
 1. [Install SFML](https://github.com/oprypin/crsfml#install-sfml)
 
+NOTE: for MacOS brew SFML is updated past 2.5, need to install via custom brew tap instead: https://github.com/mswieboda/homebrew-sfml/
+
+```
+brew install mswieboda/sfml/sfml@2.5
+```
+
 2. Add the dependency to your `shard.yml`:
 
    ```yaml
